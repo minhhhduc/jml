@@ -99,7 +99,7 @@ Implements high-fidelity Cartesian plotting and pixel-level grid rendering.
 
 ---
 
-### 4. SKLearn: High-Dimensional Machine Learning Suite
+### 4. SKLearn: Machine Learning Module
 A fully integrated, multi-threaded numerical estimation framework conforming to the Python Scikit-Learn paradigm.
 
 ```mermaid

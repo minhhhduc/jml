@@ -99,7 +99,7 @@ Two-dimensional graphical visualization engines utilizing high-performance pixel
 
 ---
 
-## 4. SKLearn: Statistical Machine Learning Suite
+## 4. SKLearn: Machine Learning Module
 A fully integrated, multi-threaded numerical estimation framework conforming to the Python Scikit-Learn paradigm.
 
 ### 4.1 Supervised Classifiers
