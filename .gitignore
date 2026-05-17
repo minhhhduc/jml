@@ -112,3 +112,5 @@ build/
 ## Temporary Test Outputs
 _temp_*.png
 _test_out.csv
+sample_advanced.csv
+
