@@ -100,7 +100,11 @@ Two-dimensional graphical visualization engines utilizing high-performance pixel
 ---
 
 ## 4. SKLearn: Machine Learning Module
-A fully integrated, multi-threaded numerical estimation framework conforming to the Python Scikit-Learn paradigm.
+Provides machine learning estimators, datasets, and preprocessing scalers in Java, matching Python's Scikit-Learn API exactly. Every estimator uses the familiar, standardized Python method signatures (`fit()`, `predict()`, `score()`, `transform()`, and `fitTransform()`) to deliver a fully equivalent developer experience.
+
+> [!NOTE]
+> The API and operational paradigms of the `sklearn` module strictly duplicate the Scikit-Learn Python library structure. For academic and technical reference, see the foundational publication:  
+> Pedregosa et al., "Scikit-learn: Machine Learning in Python", *Journal of Machine Learning Research*, 12, pp. 2825-2830, 2011.
 
 ### 4.1 Supervised Classifiers
 Supervised estimators for predicting qualitative targets $y \in \{C_1, C_2, \dots, C_k\}$:
@@ -109,7 +113,7 @@ Supervised estimators for predicting qualitative targets $y \in \{C_1, C_2, \dot
 * `sklearn.ensemble.RandomForestClassifier`: Ensembles $B$ distinct decision trees. Features parallel training using CPU multi-threading via `n_jobs=-1`:
   $$\hat{y} = \operatorname{mode}\{\hat{y}_1, \hat{y}_2, \dots, \hat{y}_B\}$$
 * `sklearn.neighbors.KNeighborsClassifier`: Non-parametric classification based on Minkowski distances in metric spaces $\mathbb{R}^d$:
-  $$d(p, q) = \left( \sum_{i=1}^d |p_i - q_i|^r \right)^{1/r}$$
+  $$d(p, q) = \left( \sum_{i=1}^d |p_i - q_i| ^r \right)^{1/r}$$
 * `sklearn.linear_model.LogisticRegression`: Optimizes cross-entropy loss via gradient descent with Sigmoid mapping:
   $$\sigma(z) = \frac{1}{1 + e^{-z}}$$
 * `sklearn.svm.SVC`: Computes optimal hyperplanes maximizing margin bounds $\frac{2}{\|w\|}$ in high-dimensional kernel spaces.
@@ -141,12 +145,10 @@ Predicts quantitative target vectors $y \in \mathbb{R}$:
   $$\phi(x) = [1, x_1, x_2, x_1^2, x_1 x_2, x_2^2]$$
 * `sklearn.impute.SimpleImputer`: Fills incomplete records using statistical estimators (Mean, Median, or Constant value).
 
-### 4.4 Model Selection & Pipelines
+### 4.4 Model Selection & Validation
 * `sklearn.model_selection.ModelSelection`:
   * `trainTestSplit()`: Partitions datasets randomly while preserving relative label frequencies.
   * `crossValScore()`: Computes $K$-fold cross-validation scores to assess generalization.
-* `sklearn.model_selection.GridSearchCV`: Performs brute-force multi-threaded parameter sweeps (`n_jobs=-1`) to identify optimal estimators.
-* `sklearn.pipeline.Pipeline`: Implements a unified composite pipeline structure wrapping sequential transformations and estimation steps.
 
 ### 4.5 Datasets & Utilities
 * `sklearn.datasets.Datasets`: High-level loaders (`loadIris()`) and synthetic dataset generators (`makeRegression()`, `makeBlobs()`).
