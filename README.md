@@ -1,97 +1,117 @@
-# 📊 NumJa - Thư Viện Array/Ma Trận Cho Java
-
-NumJa là thư viện NumPy-like chạy trên **Java**. Điểm đặc biệt của phiên bản này là **hoạt động hoàn toàn độc lập**, không cần mạng, không cần cài Maven, và **CHỈ CẦN CÀI ĐẶT 1 LẦN** là có thể gọi thư viện ở bất kỳ đâu trên máy tính bằng `javac` và `java` nguyên bản!
-
----
-
-## ⚡ CÁCH CÀI ĐẶT CHO MÁY KHÁC (Chỉ làm 1 lần duy nhất)
-
-Nếu bạn gửi dự án này sang một máy tính khác, hãy làm theo các bước sau để máy đó có thể dùng thư viện mà không cần gõ lệnh cấu hình phức tạp:
-
-### Bước 1: Sinh ra file thư viện (.jar)
-Vào thư mục gốc và chạy tập lệnh PowerShell:
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build_core.ps1
-```
-
-### Bước 2: Cài đặt vĩnh viễn vào máy
-Để không bao giờ phải gõ đường dẫn thư viện (`-cp`) mỗi khi lập trình, hãy chạy tập lệnh:
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\install_core.ps1
-```
-
-Script này sẽ:
-1. Copy file thư viện đóng gói bảo mật (ProGuard obfuscated) `.jar` vào thư mục `dist/` và cài đặt vào môi trường của máy tính.
-2. Cập nhật biến môi trường **`CLASSPATH`** của hệ thống.
-
-### Bước 3: Khởi động lại Terminal
-**Cực kỳ quan trọng:** Sau khi cài xong, bạn **BẮT BUỘC** phải tắt cái Terminal hiện tại đi và mở một cái Terminal mới tinh để hệ điều hành nhận diện biến môi trường vừa cài.
+# 📊 NumJa: High-Performance Tensor Computations & Statistical Learning Framework for Java
+> **Release Version 0.2.0 - Closed-Source Modular Release**
+> NumJa is a high-performance, zero-dependency, and mathematically rigorous tensor algebra and statistical learning library developed natively for the Java Virtual Machine (JVM). It offers an intuitive, Python-equivalent syntax simulating NumPy, Pandas, Matplotlib, Seaborn, and Scikit-Learn, optimized for low-latency offline executions.
 
 ---
 
-## 💥 CÁCH SỬ DỤNG (Tuyệt đối không cần option)
+## 🔬 Scientific Abstract & Motivation
+In scientific computing and data science, the Python ecosystem (NumPy, SciPy, Scikit-Learn) has established dominance due to expressive API semantics and vectorized execution. However, deploying these models onto the JVM often introduces significant JNI overhead, dependency conflicts, or deployment complexities. 
 
-Từ bây giờ trở đi, bất kể bạn hay người khác tạo file Java ở thư mục nào trên máy tính, chỉ cần viết code và chạy bằng 2 lệnh cơ bản nhất.
-
-**Ví dụ, tạo file `NumJaDemo.java`:**
-```java
-import numja.core.NDArray;
-import static numja.NumJa.*;
-
-public class NumJaDemo {
-    public static void main(String[] args) {
-        NDArray x = array(new double[]{10.0, 20.0, 30.0});
-        System.out.println("Trung binh: " + mean(x));
-    }
-}
-```
-
-**Biên dịch và Chạy thẳng trên Terminal:**
-```powershell
-javac NumJaDemo.java
-java NumJaDemo
-```
-*(Hoàn toàn không cần dùng tham số `-cp` hay khai báo thư viện phức tạp!)*
+**NumJa** bridges this gap by introducing a native, fully modular, and highly optimized mathematical framework. By wrapping underlying multi-threaded BLAS-like routines and implementing automatic tensor broadcasting, NumJa enables high-throughput data pipelines directly within the JVM. Furthermore, the compiled modules are protected via advanced **ProGuard Obfuscation** to secure proprietary algorithmic assets during offline deployment.
 
 ---
 
-## 🔧 NẾU DÙNG VS CODE (Chỉ việc bấm nút Run)
+## 📦 Architectural Specifications & Decoupling
 
-Mọi thứ đã được cấu hình sẵn trong thư mục `.vscode/`:
-1. Mở thư mục này bằng VS Code.
-2. Mở file `.java` bất kỳ nằm trong thư mục gốc hoặc `examples/`
-3. Bấm **Nút Run (Play)** ở góc trên bên phải màn hình.
-✅ VS Code sẽ tự lo liệu mọi thứ mà không văng lỗi `ClassNotFoundException`.
+NumJa is distributed as a suite of five decoupled, highly interoperable JAR modules targeting Java 11 through Java 25+:
+
+```text
+dist/
+├── numja.jar          ✅ N-dimensional tensor representation (NDArray) & matrix decompositions
+├── pandas.jar         ✅ Labeled relational manifolds (DataFrame & Series) & CSV parser
+├── matplotlib.jar     ✅ 2D plotting state-machine & high-performance grid renderer (imshow)
+├── seaborn.jar        ✅ Confusion matrix visualizers & statistical heatmaps
+└── sklearn.jar        ✅ Comprehensive machine learning estimators, preprocessing & validation pipelines
+```
+
+> [!NOTE]  
+> **Closed-Source Release Paradigm:**  
+> The underlying implementation source code in `modules/` is mathematically modularized and secured under strict `.gitignore` configurations. Consumers only require the compiled, highly optimized binaries in `dist/` and standard Java dependencies, providing a zero-install, portable offline execution model.
 
 ---
 
-## 📚 TÍNH NĂNG CHÍNH CỦA THƯ VIỆN
+## 🚀 Core Scientific Modules & Mathematical Formulations
 
-### 🧠 NumJa Core (Lớp `numja.NumJa` & `numja.core.NDArray`)
-- **Toán Học & Tạo Mảng:** `zeros`, `ones`, `linspace`, `sin`, `cos`, `exp`, `array`...
-- **Thống Kê:** `mean`, `std`, `var`, `min`, `max`, `argmin`...
-- **Đại Số Tuyến Tính:** `det`, `trace`, `inv`, `matmul`, `solve`, `svd`, `qr`, `eig`...
+### 📊 1. NumJa Core: Dense Tensor Algebra
+Handles N-dimensional array representations and rigorous numerical linear algebra.
 
-### 🐼 Pandas (Lớp `pandas.DataFrame`)
-- **Đọc/Ghi Dữ Liệu:** `read_csv`, `read_json`
-- **Thao Tác Dữ Liệu:** `loc[]`, `iloc[]`, `describe()`, `head()`, `show()`, `corr()`...
+* **Tensor Concept ($\mathcal{A} \in \mathbb{R}^{d_1 \times \dots \times d_n}$):**
+  The central class `numja.core.NDArray` encapsulates dense multi-dimensional arrays, supporting arbitrary reshaping, vectorization, and automatic **Broadcasting Semantics** to align trailing singleton dimensions during binary operations.
+* **General Matrix Multiplication (GEMM):**
+  Matrix multiplication on 2D arrays is mapped via parallelized, cache-friendly implementations:
+  $$C_{ik} = \sum_{j=1}^{m} A_{ij} B_{jk}$$
+* **Linear Algebra Decompositions (`numja.linalg.LinAlg`):**
+  Provides accurate implementations of essential numerical algorithms:
+  * **Matrix Inverse ($A^{-1}$):** Solved via LU factorization with partial pivoting.
+  * **System Solver ($Ax = b$):** Resolves exact linear systems using QR decomposition or Gaussian elimination.
+  * **Singular Value Decomposition (SVD):**
+    $$A = U \Sigma V^T$$
+  * **QR Decomposition:**
+    $$A = Q R$$
+  * **Eigendecomposition:**
+    $$A v = \lambda v$$
+  * **Ordinary Least Squares (OLS):**
+    $$\min_{x} \|Ax - b\|_2$$
 
-### 📈 Trực Quan Hóa (Matplotlib & Seaborn)
-- **Matplotlib Style (`matplotlib.Matplotlib`):** 
-  - `plot(x, y)`: Vẽ đồ thị đường thẳng (Hỗ trợ trực tiếp `NDArray` và `double[]`).
-  - `scatter(x, y)`: Vẽ đồ thị phân tán (Hỗ trợ trực tiếp `NDArray` và `double[]`).
-  - `imshow(data)`: **[MỚI]** Vẽ lưới điểm ảnh pixel mịn thực tế (Hỗ trợ `NDArray` 2D và ma trận `double[][]`), tự động giãn tỷ lệ ảnh.
-  - `title()`, `xlabel()`, `ylabel()`, `clf()`, `savefig()`, `show()`.
-- **Seaborn Style (`seaborn.Seaborn`):** 
-  - `heatmap(matrix, labels)`: Bản đồ nhiệt confusion/correlation matrix (Hỗ trợ `NDArray` 2D, `double[][]`, `int[][]`).
-  - `set_theme()`, `load_dataset()`.
+---
 
-### 🤖 Học Máy & Tập Dữ Liệu (SKLearn)
-- **SKLearn Datasets (`sklearn.datasets.Datasets`):** **[MỚI]**
-  - `loadIris()`: Nạp tập dữ liệu hoa diên vĩ chuẩn về đối tượng `Bunch` (chứa `.getData()`, `.getTarget()`, `.getFeatureNames()`, `.getTargetNames()`).
-  - `makeBlobs()`: Bộ sinh các cụm Gaussian ngẫu nhiên phục vụ bài toán phân cụm.
-  - `makeRegression()`: Bộ sinh dữ liệu hồi quy ngẫu nhiên có độ nhiễu Gauss.
-- **Model Selection & Preprocessing:** `train_test_split`, `StandardScaler`, `MinMaxScaler`, `RobustScaler`, `LabelEncoder`, `SimpleImputer`.
-- **Phân Lớp & Hồi Quy:** 9 mô hình phân lớp (`DecisionTree`, `RandomForest`, `KNeighbors`, `GaussianNB`, `LogisticRegression`, `SVC`, `GradientBoosting`, `AdaBoost`, `MLPClassifier`) và 8 mô hình hồi quy.
-- **Phân Cụm & Phân Rã:** `KMeans`, `DBSCAN`, `PCA`.
-- **Đánh Giá & Pipeline:** `GridSearchCV`, `Pipeline`, `accuracyScore`, `classificationReport`, `confusionMatrix`.
+### 🐼 2. Pandas: Relational Tabular Analysis
+Manages structural data representations under discrete labeled indexing coordinate systems.
+
+* **Laminated Data Structures:**
+  Provides the labeled 1D vector `Series` and the 2D tabular matrix `DataFrame`.
+* **Descriptive Structural Profiling:**
+  The `describe()` routine computes empirical distributions across features:
+  $$\{\text{count}, \mu, \sigma, x_{\min}, x_{0.25}, x_{0.50}, x_{0.75}, x_{\max}\}$$
+* **Manifold Mappings:**
+  * **`loc` (Label Projection):** Coordinate slicing via explicit column/row header tags.
+  * **`iloc` (Coordinate Slicing):** Integer-based coordinate indexing projections.
+  * **I/O Pipelines:** High-performance, parameterizable `read_csv` and `read_json` parsers supporting separator delimiter $\delta$, custom headers, and indexing keys.
+
+---
+
+### 📈 3. Matplotlib & Seaborn: Two-Dimensional Graphical Visualizations
+Implements high-fidelity Cartesian plotting and statistical pixel-level grid rendering.
+
+* **State-Machine Plotting (`Matplotlib`):**
+  Manages continuous function mappings (`plot`), discrete scattering distributions (`scatter`), and graphical canvas manipulation (`clf()`, `title()`, `savefig()`).
+* **High-Performance Image Grid Rendering (`imshow`):**
+  Supports direct intensity mappings of $A \in \mathbb{R}^{m \times n}$ to continuous thermal pixel grid projections, integrating automatic color-bar density bars.
+* **Statistical Distribution Mapping (`Seaborn`):**
+  Renders labeled confusion matrices and covariance mappings using multi-tonal gradient ramps (`heatmap`).
+
+---
+
+### 🤖 4. SKLearn: High-Dimensional Machine Learning Suite
+A fully integrated, multi-threaded numerical estimation framework conforming to the Python **Scikit-Learn** paradigm.
+
+```mermaid
+graph TD
+    X[Raw Tabular Relation] -->|Imputation| I[SimpleImputer]
+    I -->|Z-Score Scaling| S[StandardScaler]
+    S -->|Dimensionality Reduction| P[PCA]
+    P -->|Parallel Estimation| RF[RandomForestClassifier]
+    RF -->|Generalization Evaluation| CV[Cross-Validation / GridSearchCV]
+```
+
+#### 4.1 Numerical Transformations & Scaling (Preprocessing)
+* **Standardization:** Transforms variables to conform to standard normal bounds:
+  $$z = \frac{x - \mu}{\sigma}$$
+* **MinMax Normalization:** Linearly projects domains into $[a, b]$:
+  $$x' = a + \frac{(x - x_{\min})(b - a)}{x_{\max} - x_{\min}}$$
+* **Robust Scaling:** Uses median $\tilde{x}$ and Interquartile Range (IQR) for high resistance against outliers:
+  $$x' = \frac{x - \tilde{x}}{\text{IQR}}$$
+
+#### 4.2 Supervised Learning Models
+* **Decision Boundary Impurity Splits:** Tree nodes optimize splits using Gini Index or Information Entropy:
+  $$I_{Gini}(p) = 1 - \sum_{i=1}^{k} p_i^2, \quad I_{Entropy}(p) = -\sum_{i=1}^{k} p_i \log_2(p_i)$$
+* **Random Forest Ensembles:** Parallelized training of $B$ independent estimators using modern multi-threading (`n_jobs=-1`):
+  $$\hat{y} = \operatorname{mode}\{\hat{y}_1, \hat{y}_2, \dots, \hat{y}_B\}$$
+* **Neural Network Backpropagation (MLP):** Supports deep neural network architectures containing parameterized activation kernels (Sigmoid, Hyperbolic Tangent Tanh, Rectified Linear Unit ReLU) and categorical Softmax outputs.
+
+#### 4.3 Validation & Optimization Pipelines
+* **Composite Estimator Pipelines:** Streamlines structural transformations (`SimpleImputer` ➔ `StandardScaler` ➔ `Estimator`) via the unified `Pipeline` class.
+* **Hyperparameter Sweeps:** The `GridSearchCV` class automates search space optimization using multi-threaded execution pipelines (`n_jobs=-1`).
+
+---
+**NumJa — Bridging JVM performance with the expressive elegance of mathematical Python.**
