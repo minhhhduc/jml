@@ -9,7 +9,7 @@ if ($ExamplePath -notmatch ":") {
 
 $DistDir = Join-Path $ProjectDir "dist"
 $ModuleJars = Get-ChildItem -Path $DistDir -Filter "*.jar" | Where-Object { 
-    $_.Name -match "^(numja|pandas|matplotlib|seaborn)\.jar$" 
+    $_.Name -match "^(numja|pandas|matplotlib|seaborn|sklearn)\.jar$" 
 } | Select-Object -ExpandProperty FullName
 $LibJars = Get-ChildItem -Path "$DistDir\libs" -Filter "*.jar" | Select-Object -ExpandProperty FullName
 
