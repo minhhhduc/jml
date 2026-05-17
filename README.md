@@ -100,7 +100,11 @@ Implements high-fidelity Cartesian plotting and pixel-level grid rendering.
 ---
 
 ### 4. SKLearn: Machine Learning Module
-Exposes machine learning estimators, datasets, preprocessing scalers, and validation pipelines in Java, matching Python's Scikit-Learn API.
+Provides machine learning estimators, datasets, and preprocessing scalers in Java, matching Python's Scikit-Learn API exactly. Every estimator replicates Python's method signatures (`fit()`, `predict()`, `score()`, `transform()`, and `fitTransform()`) to ensure a fully equivalent user experience.
+
+> [!NOTE]
+> The API and design of the `sklearn` module strictly replicate the Scikit-Learn Python library structure. For academic and technical reference, see:  
+> Pedregosa et al., "Scikit-learn: Machine Learning in Python", *Journal of Machine Learning Research*, 12, pp. 2825-2830, 2011.
 
 ```java
 import sklearn.datasets.Datasets;
