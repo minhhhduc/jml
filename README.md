@@ -106,6 +106,31 @@ Provides machine learning estimators, datasets, and preprocessing scalers in Jav
 > The API and design of the `sklearn` module strictly replicate the Scikit-Learn Python library structure. For academic and technical reference, see:  
 > Pedregosa et al., "Scikit-learn: Machine Learning in Python", *Journal of Machine Learning Research*, 12, pp. 2825-2830, 2011.
 
+#### 4.1 Supervised Classifiers & Regressors
+* **Classifiers (`RandomForestClassifier`, `DecisionTreeClassifier`, `SVC`, etc.):**
+  * `fit(NDArray X, int[] y)`: Trains the classification model.
+  * `predict(NDArray X)`: Generates predicted labels $y_{pred}$.
+  * `score(NDArray X, int[] y)`: Computes classification accuracy.
+* **Regressors (`LinearRegression`, `Ridge`, `RandomForestRegressor`, etc.):**
+  * `fit(NDArray X, double[] y)`: Trains the regression model.
+  * `predict(NDArray X)`: Generates continuous predictions $y_{pred}$.
+  * `score(NDArray X, double[] y)`: Computes the $R^2$ coefficient of determination.
+
+#### 4.2 Numerical Transformers & Preprocessing
+* **Scalers & Imputers (`StandardScaler`, `MinMaxScaler`, `SimpleImputer`, etc.):**
+  * `fit(NDArray X)`: Computes transformation statistics.
+  * `transform(NDArray X)`: Standardizes or scales the features.
+  * `fitTransform(NDArray X)`: Fits to features and returns the transformed array.
+
+#### 4.3 Model Selection & Datasets
+* **Validation (`ModelSelection`):**
+  * `trainTestSplit(...)`: Randomly partitions features and targets into training and testing sets.
+  * `crossValScore(...)`: Computes $K$-fold cross-validation scores.
+* **Datasets (`Datasets`, `Bunch`):**
+  * `loadIris()`, `makeRegression()`, `makeBlobs()`: Local dataset loaders and synthetic generators.
+
+#### 4.4 Complete Integration Example
+
 ```java
 import sklearn.datasets.Datasets;
 import sklearn.datasets.Bunch;
