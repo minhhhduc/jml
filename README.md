@@ -21,7 +21,9 @@ dist/
 ├── pandas.jar         ✅ Labeled relational manifolds (DataFrame & Series) & CSV parser
 ├── matplotlib.jar     ✅ 2D plotting state-machine & high-performance grid renderer (imshow)
 ├── seaborn.jar        ✅ Confusion matrix visualizers & statistical heatmaps
-└── sklearn.jar        ✅ Comprehensive machine learning estimators, preprocessing & validation pipelines
+├── sklearn.jar        ✅ Comprehensive machine learning estimators, preprocessing & validation pipelines
+├── libs/              ✅ Third-party library dependencies (Commons-Math, EJML, JFreeChart...)
+└── datasets/          ✅ Sample datasets for machine learning validation (iris.csv...)
 ```
 
 > [!NOTE]  
