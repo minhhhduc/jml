@@ -1,12 +1,4 @@
-# .gitignore for NumJa - Java NumPy-like Library
-
-## Protected Source Code & Developer Tooling (IGNORE FOR CLOSED-SOURCE RELEASES)
-/modules/
-/libs/
-/.github/
-/pom.xml
-/proguard.pro
-/CONTRIBUTING.md
+# .gitignore for NumJa - Java NumPy-like Library (FULL BACKUP MODE)
 
 ## Build & Compilation Artifacts (GEN AUTOMATICALLY - IGNORE)
 /target/
