@@ -129,48 +129,6 @@ Provides machine learning estimators, datasets, and preprocessing scalers in Jav
 * **Datasets (`Datasets`, `Bunch`):**
   * `loadIris()`, `makeRegression()`, `makeBlobs()`: Local dataset loaders and synthetic generators.
 
-#### 4.4 Complete Integration Example
-
-```java
-import sklearn.datasets.Datasets;
-import sklearn.datasets.Bunch;
-import sklearn.preprocessing.StandardScaler;
-import sklearn.model_selection.ModelSelection;
-import sklearn.ensemble.RandomForestClassifier;
-import numja.core.NDArray;
-
-public class MLExample {
-    public static void main(String[] args) {
-        // 1. Load the Iris dataset
-        Bunch iris = Datasets.loadIris();
-        NDArray X = iris.getData();
-        int[] y = iris.getTarget();
-
-        // 2. Partition into training and testing splits
-        Object[] split = ModelSelection.trainTestSplit(X, y, 0.3, 42);
-        NDArray X_train = (NDArray) split[0];
-        NDArray X_test = (NDArray) split[1];
-        int[] y_train = (int[]) split[2];
-        int[] y_test = (int[]) split[3];
-
-        // 3. Scale features using Z-score standardization
-        StandardScaler scaler = new StandardScaler();
-        NDArray X_train_scaled = scaler.fitTransform(X_train);
-        NDArray X_test_scaled = scaler.transform(X_test);
-
-        // 4. Instantiate and fit a multi-threaded Random Forest Classifier
-        RandomForestClassifier rf = new RandomForestClassifier(100) // 100 trees
-            .setMaxDepth(5)
-            .setRandomState(42);
-        rf.fit(X_train_scaled, y_train);
-
-        // 5. Predict and evaluate performance
-        int[] predictions = rf.predict(X_test_scaled);
-        double accuracy = rf.score(X_test_scaled, y_test);
-        System.out.println("Model Test Accuracy: " + accuracy);
-    }
-}
-```
 
 ---
 **NumJa — Bridging JVM performance with the expressive elegance of mathematical Python.**
