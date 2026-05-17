@@ -1,160 +1,136 @@
-# 🏆 Thư Viện Học Máy Java Độc Lập - NumJa User Guide
+# 🏆 Tổng Quan Tính Năng & Danh Sách Mô-đun (NumJa API Overview)
 > **Phát hành phiên bản 0.2.0 - Closed-Source Release Model**
-> Một giải pháp học máy độc lập, siêu gọn nhẹ, hiệu năng cao phỏng theo hệ sinh thái Python (NumPy, Pandas, Matplotlib, Seaborn, Scikit-Learn) được tối ưu hóa cho môi trường Java offline (không Maven, không cài đặt phức tạp).
+> Tài liệu này mô tả chi tiết toàn bộ các lớp (Classes), phương thức (APIs) và cấu trúc tính năng được triển khai trong hệ sinh thái **NumJa** (mô phỏng theo hệ sinh thái Khoa học Dữ liệu & Học máy của Python bao gồm NumPy, Pandas, Matplotlib, Seaborn, và Scikit-Learn).
 
 ---
 
-## 📦 Kiến Trúc Phân Phối Độc Lập (Multi-Module JARs)
+## 📊 1. Mô-đun NumJa Core (Mô Phỏng NumPy)
+Mô-đun cốt lõi xử lý mảng đa chiều hiệu năng cao, đại số tuyến tính chuyên sâu và các toán tử toán học vector hóa.
 
-Dự án được phân phối dưới dạng các mô-đun JAR độc lập, được biên dịch ở Java 11 (tương thích tối đa với Java 11 đến Java 25+) và đã qua bảo mật tối đa bằng công cụ **ProGuard Obfuscator** để chống dịch ngược mã nguồn:
+### Lớp chính: `numja.core.NDArray`
+Bộ chứa mảng đa chiều trung tâm phỏng theo `numpy.ndarray`.
+* **Khởi tạo & Định dạng:**
+  * `shape()` / `getShape()`: Trả về hình dạng ma trận (số chiều, số cột, số dòng).
+  * `reshape(int...)`: Tái cấu trúc hình dạng mảng mà không thay đổi dữ liệu.
+  * `T()`: Phép chuyển vị ma trận nhanh (Transpose).
+  * `toArray()` / `toArray2D()`: Xuất dữ liệu mảng ra mảng Java nguyên bản (`double[]` hoặc `double[][]`).
+* **Toán tử Vector hóa & Tự động Broadcasting:**
+  * `add(NDArray)` / `add(double)`: Cộng hai mảng hoặc cộng một hằng số với cơ chế tự động căn chỉnh kích thước chiều tự động (Broadcasting).
+  * `subtract(NDArray)` / `subtract(double)`: Phép trừ vector hóa tự động phát sóng.
+  * `multiply(NDArray)` / `multiply(double)`: Nhân từng phần tử (Element-wise multiplication).
+  * `divide(NDArray)` / `divide(double)`: Chia từng phần tử (Element-wise division).
+  * `dot(NDArray)` / `matmul(NDArray)`: Nhân ma trận (Matrix multiplication) tối ưu hóa đa luồng.
 
-```text
-dist/
-├── numja.jar          ✅ Mảng đa chiều NDArray & Đại số tuyến tính chuyên sâu (LinAlg)
-├── pandas.jar         ✅ Bảng dữ liệu DataFrame, Series và I/O CSV cực mạnh
-├── matplotlib.jar     ✅ Đồ thị 2D, Scatter Plot & Trình vẽ ảnh imshow() mịn điểm ảnh
-├── seaborn.jar        ✅ Bản đồ nhiệtstatistical statistical statistical statistical Seaborn Heatmap
-├── sklearn.jar        ✅ Công cụ học máy tối tân (50+ Classes Classifier, Regressor, Pipeline...)
-└── libs/              ✅ Thư viện phụ thuộc bên thứ ba (Commons Math, EJML, JFreeChart...)
-```
+### Lớp Tiện ích: `numja.NumJa`
+Lớp factory chứa các phương thức khởi tạo mảng tĩnh và các hàm thống kê tiện ích tương đương `numpy`:
+* `array(double[][])` / `array(double...)`: Tạo `NDArray` nhanh từ dữ liệu Java nguyên bản.
+* `zeros(int...)` / `ones(int...)`: Khởi tạo nhanh mảng toàn số 0 hoặc số 1.
+* `linspace(double start, double stop, int num)`: Tạo dãy số phân bố đều tuyến tính.
+* `mean(NDArray)` / `std(NDArray)`: Tính trung bình cộng và độ lệch chuẩn của mảng.
 
-> [!IMPORTANT]  
-> **Mô Hình Phân Phối Closed-Source:**  
-> Toàn bộ mã nguồn cốt lõi trong `modules/` được cấu hình ẩn khỏi Git qua `.gitignore` để bảo vệ bản quyền nhà phát triển. Người dùng cuối và cộng tác viên chỉ cần kéo thư mục `dist/` về là có thể phát triển phần mềm ngay lập tức trên các IDE phổ biến (VS Code, IntelliJ) mà không cần mạng Internet.
-
----
-
-## 🛠️ Hướng Dẫn Sử Dụng & Phát Triển Siêu Tốc
-
-### 1. Cách Chạy Các Ví Dụ Mẫu Offline
-Chúng tôi đã cung cấp sẵn tập lệnh PowerShell tiện ích để bạn chạy thử nhanh bất kỳ ví dụ nào trong thư mục `examples/`:
-
-```powershell
-# Chạy ví dụ đồ thị Matplotlib
-./scripts/run_example.ps1 examples/plot/TestMatplotlib.java
-
-# Chạy ví dụ tổng hợp đầy đủ kiểm định học máy & xử lý dữ liệu
-./scripts/run_example.ps1 examples/TestComprehensive.java
-```
-
-### 2. Cách Biên Dịch & Chạy Chương Trình Của Riêng Bạn (Bằng Command Line)
-Để viết ứng dụng client sử dụng thư viện NumJa của riêng bạn (ví dụ `YourApp.java`), hãy sử dụng lệnh sau:
-
-**Biên dịch chương trình:**
-```bash
-javac -cp "dist/*;dist/libs/*" YourApp.java
-```
-
-**Thực thi chương trình:**
-```bash
-java -cp "dist/*;dist/libs/*;." YourApp
-```
-
-### 3. Thiết Lập Trên VS Code Độc Lập (Không Cần Maven)
-Dự án đã được cấu hình sẵn môi trường phát triển tối ưu trên VS Code:
-1. Mở thư mục gốc của dự án bằng **VS Code**.
-2. Khi mở các tệp `.java` trong `examples/`, VS Code sẽ tự động nhận diện tất cả thư viện đóng gói trong `dist/` và `dist/libs/` thông qua cấu hình `.vscode/settings.json`.
-3. Chỉ cần bấm nút **Run** / **Debug** (hoặc nhấn `F5`) ở góc trên bên phải để chạy trực tiếp (Chương trình sẽ tự động thực thi trong RAM thông qua tính năng JEP 330 của Java hiện đại mà không sinh tệp tin `.class` thừa).
+### Thư viện Đại số tuyến tính chuyên sâu: `numja.linalg.LinAlg`
+Cung cấp các phép phân tích và biến đổi ma trận chuyên nghiệp:
+* `inv(NDArray)`: Nghịch đảo ma trận (Matrix Inverse).
+* `det(NDArray)`: Tính định thức của ma trận vuông (Determinant).
+* `solve(NDArray A, NDArray b)`: Giải hệ phương trình tuyến tính $Ax = b$ tốc độ cao.
+* `trace(NDArray)`: Tính vết của ma trận (Tổng đường chéo chính).
+* `svd(NDArray)`: Phân tích suy hao kỳ dị (Singular Value Decomposition), trả về kết quả lớp chứa `SVD`.
+* `qr(NDArray)`: Phân tích QR (QR Decomposition), trả về kết quả lớp chứa `QR`.
+* `eig(NDArray)`: Tính toán trị riêng và vector riêng (Eigenvalues & Eigenvectors), trả về đối tượng `Eigen`.
+* `lstsq(NDArray A, NDArray b)`: Giải bài toán bình phương tối thiểu (Ordinary Least Squares), trả về kết quả `Lstsq`.
 
 ---
 
-## 🚀 Tính Năng Vượt Trội & Danh Sách Các Lớp (API Inventory)
+## 🐼 2. Mô-đun Pandas (Xử Lý Dữ Liệu Lớn)
+Hệ thống xử lý, phân tích và làm sạch dữ liệu có cấu trúc phỏng theo thư viện **Pandas** trong Python.
 
-### 📊 1. NumJa Core (Mảng & Đại Số Tuyến Tính)
-Thiết kế mô phỏng cực sát cú pháp mảng đa chiều của **NumPy** trong Python.
-* **`NumJa`**: Lớp factory tiện ích (`array()`, `zeros()`, `ones()`, `linspace()`, `mean()`, `std()`).
-* **`NDArray`**: Bộ chứa mảng đa chiều hỗ trợ đầy đủ toán tử vector hóa, cộng trừ nhân chia vô hướng và **tự động Broadcasting** như Python.
-* **`LinAlg`**: Giải các bài toán ma trận phức tạp:
-  * `inv(NDArray)`: Nghịch đảo ma trận.
-  * `det(NDArray)`: Định thức.
-  * `solve(NDArray A, NDArray b)`: Giải hệ phương trình tuyến tính cực nhanh.
-  * `svd()`, `qr()`, `eig()`, `lstsq()`: Phân tích trị riêng và bình phương tối thiểu.
+### Lớp Loader: `pandas.Pandas`
+Trình đọc và ghi tệp tin nâng cao:
+* `read_csv(String path)` / `read_csv(String path, ReadCsvOptions options)`: Bộ nạp CSV mạnh mẽ, hỗ trợ các tùy chọn chuyên sâu như dấu phân cách (`sep`), bỏ qua dòng (`skiprows`), tiêu đề dòng (`header`), và cột chỉ mục (`index_col`).
+* `read_json(String path)`: Nạp dữ liệu cấu trúc JSON trực tiếp vào DataFrame.
 
-### 🐼 2. Pandas (Xử Lý Dữ Liệu Lớn)
-Cung cấp giải pháp phân tích dữ liệu dạng bảng tương đương **Pandas**.
-* **`Pandas` (I/O)**: `read_csv()`, `read_json()` hỗ trợ các tham số chuyên sâu (`sep`, `skiprows`, `header`, `index_col`).
-* **`DataFrame`**: Cấu trúc dữ liệu 2D gắn nhãn. Hỗ trợ đầy đủ:
-  * `describe()`: Bảng tóm tắt thống kê mô tả toàn diện (mean, std, min, các percentile 25/50/75, max).
-  * `groupby(col)`: Nhóm dữ liệu nâng cao.
-  * `dropna()`, `fillna()`, `drop_duplicates()`: Làm sạch dữ liệu.
-* **`DataFrameLoc` / `DataFrameILoc`**: Truy xuất dữ liệu nâng cao theo nhãn dòng (`loc`) hoặc theo tọa độ nguyên (`iloc`) cực kỳ linh hoạt (`df.iloc(1, 2)`).
-* **`Series`**: Mảng 1D gắn nhãn để xử lý vector dữ liệu riêng lẻ.
+### Lớp Trung tâm: `pandas.DataFrame`
+Cấu trúc dữ liệu 2D dạng bảng với nhãn dòng (Index) và nhãn cột (Columns).
+* **Kiểm tra thông số & Xem nhanh:**
+  * `shape()`: Lấy kích thước bảng (Dòng x Cột).
+  * `head(n)` / `tail(n)`: Xem $n$ bản ghi đầu tiên hoặc cuối cùng.
+  * `columns()`: Trích xuất danh sách tên cột dữ liệu.
+  * `describe()`: Tính toán nhanh bảng thống kê mô tả bao gồm: số lượng mẫu (`count`), giá trị trung bình (`mean`), độ lệch chuẩn (`std`), giá trị nhỏ nhất (`min`), các phân vị (`25%`, `50%`, `75%`), và giá trị lớn nhất (`max`).
+* **Lọc & Biến đổi dữ liệu:**
+  * `loc` (qua lớp `DataFrameLoc`): Lọc trích xuất dữ liệu dựa trên nhãn tên (Label-based indexer).
+  * `iloc` (qua lớp `DataFrameILoc`): Lọc trích xuất dữ liệu dựa trên tọa độ vị trí nguyên (Integer-based indexer).
+  * `drop(String...)` / `drop_duplicates()`: Loại bỏ các cột không dùng hoặc loại bỏ dòng trùng lặp.
+  * `dropna()` / `fillna(double)`: Xử lý làm sạch giá trị bị khuyết thiếu (NaN).
+  * `sort_values(String col)`: Sắp xếp bảng theo giá trị của cột xác định.
+  * `groupby(String col)`: Gom nhóm dữ liệu nâng cao phỏng theo `pandas.DataFrame.groupby`.
+  * `toNDArray()`: Chuyển đổi bảng số liệu trực tiếp thành mảng `NDArray`.
 
-### 📈 3. Matplotlib & Seaborn (Trực Quan Hóa Dữ Liệu)
-Công cụ đồ họa mạnh mẽ kế thừa sức mạnh hiển thị điểm ảnh thực tế.
-* **`Matplotlib` (State-Machine)**:
-  * `plot(x, y)`: Vẽ đồ thị đường thẳng.
-  * `scatter(x, y)`: Vẽ cụm điểm phân phối.
-  * `title()`, `xlabel()`, `ylabel()`: Đặt tên tiêu đề và các trục đồ thị.
-  * `clf()`: Xóa màn hình vẽ.
-  * `show()`: Bật cửa sổ GUI hiển thị biểu đồ đồ họa thời gian thực.
-  * `imshow(double[][])` / `imshow(NDArray)`: Vẽ điểm ảnh pixel siêu mịn, tự động kéo dãn phân giải và hiển thị thanh dải màu color-bar cao cấp.
-* **`Seaborn`**:
-  * `heatmap(int[][], String[] classes)`: Trực quan hóa ma trận nhầm lẫn (Confusion Matrix) dạng bản đồ nhiệt statistical statistical statistical statistical Seaborn Heatmap.
-
-### 🤖 4. SKLearn (Hệ Thống Machine Learning Toàn Diện - 50+ Classes)
-Bộ thư viện học máy đồ sộ bậc nhất trong Java, kế thừa triết lý lập trình của Python **Scikit-Learn**:
-
-| Nhóm Tính Năng | Lớp / Lớp Phân Phối (Classes) | Chi Tiết Sử Dụng |
-| :--- | :--- | :--- |
-| **Supervised Classifiers** | `DecisionTreeClassifier`, `RandomForestClassifier`, `KNeighborsClassifier`, `LogisticRegression`, `SVC` (SVM), `GaussianNB`, `GradientBoostingClassifier`, `AdaBoostClassifier`, `MLPClassifier` | Hệ thống phân lớp cực kỳ đa dạng. Hỗ trợ đa luồng tự động (`n_jobs=-1`) cho Random Forest và KNN để tối ưu tối đa hiệu năng CPU. |
-| **Supervised Regressors** | `LinearRegression`, `Ridge`, `Lasso`, `DecisionTreeRegressor`, `RandomForestRegressor`, `KNeighborsRegressor`, `SVR`, `MLPRegressor` | Hồi quy tuyến tính, L1/L2 regularized, hồi quy phi tuyến đa lớp và hồi quy qua mạng Nơ-ron nhân tạo MLP. |
-| **Data Preprocessing** | `StandardScaler`, `MinMaxScaler`, `RobustScaler`, `LabelEncoder`, `OneHotEncoder`, `PolynomialFeatures`, `SimpleImputer` | Chuẩn hóa chuẩn tắc Z-score, chuẩn hóa khoảng [0,1], xử lý dữ liệu khuyết thiếu (NaN), mã hóa nhãn targets và sinh các đặc trưng đa thức bậc cao. |
-| **Model Selection** | `trainTestSplit()`, `trainTestSplitRegression()`, `CrossValidation` (K-Fold), `GridSearchCV` | Phân tách dữ liệu kiểm thử, kiểm định chéo và tự động tối ưu hóa siêu tham số (Hyperparameter Tuning) đa luồng. |
-| **Pipelines** | `Pipeline` | Gom toàn bộ quy trình biến đổi dữ liệu (`SimpleImputer` ➔ `StandardScaler` ➔ `Model`) thành một chuỗi duy nhất tự động. |
-| **Datasets** | `loadIris()`, `makeBlobs()`, `makeRegression()` | Trình nạp tập dữ liệu thực tế mẫu và trình sinh dữ liệu kiểm định phân cụm/hồi quy ngẫu nhiên. |
+### Lớp Vector 1D: `pandas.Series`
+Biểu diễn một cột dữ liệu 1D gắn nhãn đi kèm. Hỗ trợ đầy đủ các phép toán thống kê mô tả riêng lẻ và chuyển đổi ngược về mảng Java.
 
 ---
 
-## 🌟 Ví Dụ Thực Tế: Xây Dựng Pipeline Học Máy Toàn Diện
-Dưới đây là đoạn mã thực tế minh họa cách nạp dữ liệu bằng **Pandas**, chia dữ liệu và đưa vào **Pipeline** chuẩn hóa + dự đoán học máy cực kỳ ngắn gọn bằng thư viện **NumJa** của bạn:
+## 📈 3. Mô-đun Matplotlib (Trực Quan Hóa 2D)
+Mô phỏng cơ chế máy trạng thái (State-machine) vẽ đồ thị của **matplotlib.pyplot**.
 
-```java
-import pandas.DataFrame;
-import pandas.Pandas;
-import numja.core.NDArray;
-import sklearn.model_selection.ModelSelection;
-import sklearn.pipeline.Pipeline;
-import sklearn.preprocessing.StandardScaler;
-import sklearn.ensemble.RandomForest;
-import sklearn.metrics.Metrics;
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class MyMLPipeline {
-    public static void main(String[] args) throws Exception {
-        // 1. Nạp dữ liệu bằng Pandas
-        DataFrame df = Pandas.read_csv("dist/datasets/iris.csv");
-        System.out.println("Shape dữ liệu: " + df.shape()[0] + " dòng x " + df.shape()[1] + " cột");
-
-        // 2. Tách đặc trưng (Features) và nhãn (Target) dạng NDArray
-        NDArray X = df.drop("species").toNDArray();
-        int[] y = df.getColumn("species").toIntArray(); // giả sử nhãn đã được mã hóa
-
-        // 3. Chia tập dữ liệu Train:Test tỉ lệ 70:30
-        Object[] split = ModelSelection.trainTestSplit(X, y, 0.3, 42);
-        NDArray X_train = (NDArray) split[0];
-        NDArray X_test = (NDArray) split[1];
-        int[] y_train = (int[]) split[2];
-        int[] y_test = (int[]) split[3];
-
-        // 4. Xây dựng Pipeline tự động (Chuẩn hóa StandardScaler -> Rừng Ngẫu Nhiên RandomForest)
-        List<Object> steps = new ArrayList<>();
-        steps.add(new StandardScaler());
-        steps.add(new RandomForest(15, 5, 2, "classifier", -1)); // n_jobs=-1 dùng full luồng CPU
-        Pipeline pipeline = new Pipeline(steps);
-
-        // Fit mô hình trên tập huấn luyện
-        pipeline.fit(X_train, y_train);
-
-        // Dự đoán và tính toán độ chính xác
-        int[] predictions = (int[]) pipeline.predict(X_test);
-        double accuracy = Metrics.accuracyScore(y_test, predictions);
-        System.out.printf("🎯 Độ chính xác kiểm thử của Pipeline: %.2f%%\n", accuracy * 100);
-    }
-}
-```
+### Lớp chính: `matplotlib.Matplotlib`
+* `plot(x, y)` / `plot(NDArray x, NDArray y)`: Vẽ đồ thị dạng đường (Line plot). Hỗ trợ nạp mảng `NDArray` trực tiếp.
+* `scatter(x, y)` / `scatter(NDArray x, NDArray y)`: Vẽ biểu đồ cụm điểm phân phối (Scatter plot).
+* `title(String)`: Thiết lập tiêu đề phía trên đồ thị.
+* `xlabel(String)` / `ylabel(String)`: Gán nhãn cho trục hoành và trục tung.
+* `clf()`: Xóa sạch khung hình hiện tại để chuẩn bị vẽ biểu đồ mới.
+* `show()`: Khởi chạy cửa sổ đồ họa GUI hiển thị hình vẽ trực quan thời gian thực.
+* `savefig(String path)`: Xuất đồ thị đang vẽ ra file ảnh tĩnh (PNG).
+* `imshow(double[][])` / `imshow(NDArray)`: Trình trực quan hóa hình ảnh dạng lưới pixel mịn cao cấp, hỗ trợ dải màu gradient color-bar chuyên nghiệp mà không có các số phân mảnh ô đè lên ảnh.
 
 ---
-**NumJa - Mang sức mạnh khoa học dữ liệu Python vào thế giới Java nguyên bản một cách đơn giản nhất!**
+
+## 📊 4. Mô-đun Seaborn (Thống Kê Trực Quan)
+Cung cấp các biểu đồ thống kê dạng nâng cao phỏng theo **Seaborn** của Python, hoạt động liên kết chặt chẽ với đối tượng `DataFrame`.
+
+### Lớp chính: `seaborn.Seaborn`
+* `heatmap(int[][] confusionMatrix, String[] classes)` / `heatmap(NDArray matrix, String[] classes)`: Trực quan hóa ma trận nhầm lẫn (Confusion Matrix) dạng bản đồ nhiệt sang trọng, tự động tích hợp thanh dải màu gradient hiển thị mật độ số liệu phân bổ.
+* `load_dataset(String name)`: Nạp tự động các tập dữ liệu thống kê kiểm định thực tế có sẵn.
+
+---
+
+## 🤖 5. Mô-đun SKLearn (Hệ Thống Học Máy Scikit-Learn - 50+ Classes)
+Bộ thư viện học máy đồ sộ được module hóa chặt chẽ, tối ưu hóa xử lý đa luồng phỏng theo **scikit-learn** của Python.
+
+### 5.1 Các Bộ Phân Lớp Giám Sát (Supervised Classifiers)
+* `sklearn.tree.DecisionTreeClassifier`: Bộ phân lớp Cây quyết định dựa trên tiêu chí phân chia tối ưu Entropy/Gini.
+* `sklearn.ensemble.RandomForestClassifier`: Mô hình Rừng ngẫu nhiên song song đa luồng. Hỗ trợ tham số `n_jobs=-1` để kích hoạt toàn bộ các nhân xử lý CPU tăng tốc độ huấn luyện.
+* `sklearn.neighbors.KNeighborsClassifier`: Bộ phân lớp K-Láng giềng gần nhất hỗ trợ thuật toán cây tìm kiếm K-D Tree nâng cao.
+* `sklearn.linear_model.LogisticRegression`: Phân lớp tuyến tính Logistic Gradient Descent.
+* `sklearn.svm.SVC`: Bộ phân lớp Vector hỗ trợ (Support Vector Machine) hỗ trợ các không gian hạt nhân (Kernel functions) đa dạng.
+* `sklearn.naive_bayes.GaussianNB`: Phân lớp xác suất Gaussian Naive Bayes.
+* `sklearn.ensemble.GradientBoostingClassifier`: Bộ tăng cường độ dốc Gradient Boosting Classifier tuần tự.
+* `sklearn.ensemble.AdaBoostClassifier`: Bộ tăng cường AdaBoost Classifier tuần tự.
+* `sklearn.neural_network.MLPClassifier`: Mạng Nơ-ron nhân tạo đa tầng (Multi-Layer Perceptron Classifier) hỗ trợ tùy biến các hàm kích hoạt (Sigmoid, ReLU, Tanh, Softmax) và tối ưu hóa lan truyền ngược.
+
+### 5.2 Các Bộ Hồi Quy Giám Sát (Supervised Regressors)
+* `sklearn.linear_model.LinearRegression`: Hồi quy tuyến tính bình phương tối thiểu.
+* `sklearn.linear_model.Ridge`: Hồi quy Ridge tích hợp ràng buộc L2 regularization chống quá khớp (overfitting).
+* `sklearn.linear_model.Lasso`: Hồi quy Lasso tích hợp ràng buộc L1 regularization tối ưu hóa lựa chọn đặc trưng thưa.
+* `sklearn.tree.DecisionTreeRegressor` / `sklearn.ensemble.RandomForestRegressor`: Cây quyết định và rừng ngẫu nhiên áp dụng cho bài toán dự báo liên tục.
+* `sklearn.neighbors.KNeighborsRegressor` / `sklearn.svm.SVR` / `sklearn.neural_network.MLPRegressor`: Các biến thể hồi quy K-Láng giềng gần nhất, SVM Regressor, và Mạng nơ-ron hồi quy MLP.
+
+### 5.3 Tiền Xử Lý Dữ Liệu & Điền Khuyết (Data Preprocessing)
+* `sklearn.preprocessing.StandardScaler`: Chuẩn hóa dữ liệu theo phân phối chuẩn tắc (Z-score normalization: mean = 0, std = 1).
+* `sklearn.preprocessing.MinMaxScaler`: Chuẩn hóa mảng dữ liệu về phạm vi xác định (mặc định $[0, 1]$).
+* `sklearn.preprocessing.RobustScaler`: Chuẩn hóa kháng nhiễu dựa trên trung vị (Median) và khoảng tứ phân vị (IQR), tối ưu cho dữ liệu chứa nhiều ngoại lai (Outliers).
+* `sklearn.preprocessing.LabelEncoder`: Mã hóa nhãn văn bản danh mục thành các chỉ số nguyên.
+* `sklearn.preprocessing.OneHotEncoder`: Mã hóa One-Hot chuyển đổi biến danh mục thành ma trận nhị phân thưa.
+* `sklearn.preprocessing.PolynomialFeatures`: Tạo thêm các biến đặc trưng đa thức bậc cao (Polynomial degree expansion).
+* `sklearn.impute.SimpleImputer`: Tự động điền các giá trị trống (NaN) bằng phương pháp trung bình (Mean), trung vị (Median), hoặc giá trị hằng số xác định.
+
+### 5.4 Lựa Chọn Mô Hình & Xích Quy Trình (Model Selection & Pipelines)
+* `sklearn.model_selection.ModelSelection`: 
+  * `trainTestSplit()`: Phân tách dữ liệu Train/Test theo tỷ lệ mong muốn đi kèm thiết lập seed cố định ngẫu nhiên (`random_state`).
+  * `crossValScore()`: Đánh giá chéo K-Fold Cross Validation.
+* `sklearn.model_selection.GridSearchCV`: Tìm kiếm lưới tự động để tối ưu hóa siêu tham số (Hyperparameter tuning) hỗ trợ thực thi song song đa luồng (`n_jobs=-1`).
+* `sklearn.pipeline.Pipeline`: Cho phép gom toàn bộ quy trình tiền xử lý và mô hình học máy thành một chuỗi duy nhất nối tiếp (`Imputer` ➔ `Scaler` ➔ `Estimator`), tự động kích hoạt tuần tự qua lệnh gọi `.fit()` và `.predict()`.
+
+### 5.5 Bộ dữ liệu mẫu (Datasets)
+* `sklearn.datasets.Datasets`: Cung cấp các phương thức nạp dữ liệu mẫu nhanh như `loadIris()`, sinh dữ liệu hồi quy ngẫu nhiên `makeRegression()`, sinh dữ liệu phân cụm `makeBlobs()`.
+* `sklearn.datasets.Bunch`: Bộ chứa kiểu Dictionary tương tự Python, cung cấp các phương thức `.getData()` và `.getTarget()` lấy nhanh số liệu đặc trưng.
