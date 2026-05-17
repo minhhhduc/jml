@@ -100,54 +100,47 @@ Two-dimensional graphical visualization engines utilizing high-performance pixel
 ---
 
 ## 4. SKLearn: Machine Learning Module
-A fully integrated, multi-threaded numerical estimation framework conforming to the Python Scikit-Learn paradigm.
+Provides machine learning estimators, datasets, and preprocessing scalers in Java, matching Python's Scikit-Learn API exactly. Every estimator uses the familiar, standardized Python method signatures (`fit()`, `predict()`, `score()`, `transform()`, and `fitTransform()`) to deliver a fully equivalent developer experience.
 
-### 4.1 Supervised Classifiers
-Supervised estimators for predicting qualitative targets $y \in \{C_1, C_2, \dots, C_k\}$:
-* `sklearn.tree.DecisionTreeClassifier`: Minimizes classification impurity metrics (Gini index or Information Entropy):
-  $$I_{Gini}(p) = 1 - \sum_{i=1}^{k} p_i^2, \quad I_{Entropy}(p) = -\sum_{i=1}^{k} p_i \log_2(p_i)$$
-* `sklearn.ensemble.RandomForestClassifier`: Ensembles $B$ distinct decision trees. Features parallel training using CPU multi-threading via `n_jobs=-1`:
-  $$\hat{y} = \operatorname{mode}\{\hat{y}_1, \hat{y}_2, \dots, \hat{y}_B\}$$
-* `sklearn.neighbors.KNeighborsClassifier`: Non-parametric classification based on Minkowski distances in metric spaces $\mathbb{R}^d$:
-  $$d(p, q) = \left( \sum_{i=1}^d |p_i - q_i|^r \right)^{1/r}$$
-* `sklearn.linear_model.LogisticRegression`: Optimizes cross-entropy loss via gradient descent with Sigmoid mapping:
-  $$\sigma(z) = \frac{1}{1 + e^{-z}}$$
-* `sklearn.svm.SVC`: Computes optimal hyperplanes maximizing margin bounds $\frac{2}{\|w\|}$ in high-dimensional kernel spaces.
-* `sklearn.naive_bayes.GaussianNB`: Classification based on Bayes' theorem assuming feature independence:
-  $$P(X_i | y) = \frac{1}{\sqrt{2\pi\sigma_y^2}} \exp\left( -\frac{(X_i - \mu_y)^2}{2\sigma_y^2} \right)$$
-* `sklearn.ensemble.GradientBoostingClassifier` / `AdaBoostClassifier`: Boosted weak learners optimized through sequential cost reduction.
-* `sklearn.neural_network.MLPClassifier`: Multi-Layer Perceptron trained using backpropagation with custom activations (Logistic, ReLU, Tanh) and categorical Softmax outputs.
+> [!NOTE]
+> The API and operational paradigms of the `sklearn` module strictly duplicate the Scikit-Learn Python library structure. For academic and technical reference, see the foundational publication:  
+> Pedregosa et al., "Scikit-learn: Machine Learning in Python", *Journal of Machine Learning Research*, 12, pp. 2825-2830, 2011.
 
-### 4.2 Supervised Regressors
-Predicts quantitative target vectors $y \in \mathbb{R}$:
-* `sklearn.linear_model.LinearRegression`: Fits parameters $\theta$ to minimize Residual Sum of Squares (RSS):
-  $$J(\theta) = \sum_{i=1}^{m} (h_\theta(x^{(i)}) - y^{(i)})^2$$
-* `sklearn.linear_model.Ridge`: Adds $L_2$ regularization penalty to prevent parameter inflation:
-  $$J(\theta) = \text{RSS} + \alpha \sum_{j=1}^n \theta_j^2$$
-* `sklearn.linear_model.Lasso`: Adds $L_1$ regularization penalty promoting feature sparsity:
-  $$J(\theta) = \text{RSS} + \alpha \sum_{j=1}^n |\theta_j|$$
-* `sklearn.tree.DecisionTreeRegressor` / `RandomForestRegressor`: Tree-based piecewise continuous regression estimators.
-* `sklearn.neighbors.KNeighborsRegressor` / `SVR` / `MLPRegressor`: Regressors utilizing local geometric density, Support Vector formulations, and Multi-Layer Perceptron architectures.
+### 4.1 Supervised Classifiers & Regressors
+Encapsulates supervised learning algorithms for qualitative classification and quantitative regression.
 
-### 4.3 Numerical Feature Transforms (Preprocessing)
-* `sklearn.preprocessing.StandardScaler`: Transforms features to conform to the standard normal distribution $\mathcal{N}(0, 1)$:
-  $$z = \frac{x - \mu}{\sigma}$$
-* `sklearn.preprocessing.MinMaxScaler`: Scales bounded domains linearly to target interval $[a, b]$:
-  $$x' = a + \frac{(x - x_{\min})(b - a)}{x_{\max} - x_{\min}}$$
-* `sklearn.preprocessing.RobustScaler`: Scales features using median $\tilde{x}$ and Interquartile Range (IQR) to secure resistance against outliers:
-  $$x' = \frac{x - \tilde{x}}{\text{IQR}}$$
-* `sklearn.preprocessing.LabelEncoder` / `OneHotEncoder`: Maps categorical values to numeric keys or binary sparse vector spaces.
-* `sklearn.preprocessing.PolynomialFeatures`: Synthesizes higher-order interaction features:
-  $$\phi(x) = [1, x_1, x_2, x_1^2, x_1 x_2, x_2^2]$$
-* `sklearn.impute.SimpleImputer`: Fills incomplete records using statistical estimators (Mean, Median, or Constant value).
+* **Classifiers (`sklearn.ensemble.RandomForestClassifier`, `sklearn.tree.DecisionTreeClassifier`, `sklearn.neighbors.KNeighborsClassifier`, `sklearn.linear_model.LogisticRegression`, `sklearn.svm.SVC`, `sklearn.naive_bayes.GaussianNB`, `sklearn.ensemble.GradientBoostingClassifier`, `sklearn.ensemble.AdaBoostClassifier`, `sklearn.neural_network.MLPClassifier`):**
+  * `fit(NDArray X, int[] y)`: Trains the classification model on features $X \in \mathbb{R}^{m \times n}$ and label targets $y \in \mathbb{Z}^m$.
+  * `predict(NDArray X)`: Generates predicted labels $y_{pred} \in \mathbb{Z}^m$ for test features $X$.
+  * `score(NDArray X, int[] y)`: Computes the classification accuracy on test features $X$ and targets $y$.
 
-### 4.4 Model Selection & Pipelines
-* `sklearn.model_selection.ModelSelection`:
-  * `trainTestSplit()`: Partitions datasets randomly while preserving relative label frequencies.
-  * `crossValScore()`: Computes $K$-fold cross-validation scores to assess generalization.
-* `sklearn.model_selection.GridSearchCV`: Performs brute-force multi-threaded parameter sweeps (`n_jobs=-1`) to identify optimal estimators.
-* `sklearn.pipeline.Pipeline`: Implements a unified composite pipeline structure wrapping sequential transformations and estimation steps.
+* **Regressors (`sklearn.linear_model.LinearRegression`, `sklearn.linear_model.Ridge`, `sklearn.linear_model.Lasso`, `sklearn.tree.DecisionTreeRegressor`, `sklearn.ensemble.RandomForestRegressor`, `sklearn.neighbors.KNeighborsRegressor`, `sklearn.svm.SVR`, `sklearn.neural_network.MLPRegressor`):**
+  * `fit(NDArray X, double[] y)`: Trains the regression model on features $X \in \mathbb{R}^{m \times n}$ and continuous targets $y \in \mathbb{R}^m$.
+  * `predict(NDArray X)`: Generates continuous predictions $y_{pred} \in \mathbb{R}^m$ for test features $X$.
+  * `score(NDArray X, double[] y)`: Computes the $R^2$ coefficient of determination on test features $X$ and targets $y$.
 
-### 4.5 Datasets & Utilities
-* `sklearn.datasets.Datasets`: High-level loaders (`loadIris()`) and synthetic dataset generators (`makeRegression()`, `makeBlobs()`).
-* `sklearn.datasets.Bunch`: A key-value dictionary container for data and targets.
+### 4.2 Numerical Transformers & Preprocessing
+Enables standard feature scaling and data imputation transforms.
+
+* **Scalers & Imputers (`sklearn.preprocessing.StandardScaler`, `sklearn.preprocessing.MinMaxScaler`, `sklearn.preprocessing.RobustScaler`, `sklearn.impute.SimpleImputer`):**
+  * `fit(NDArray X)`: Computes the transformation statistics (e.g. column-wise mean $\mu$ and standard deviation $\sigma$ for standardization).
+  * `transform(NDArray X)`: Standardizes or scales the features $X$ using fitted statistics.
+  * `fitTransform(NDArray X)`: Fits to features and returns the transformed/scaled NDArray.
+* **Categorical & Feature Transformers (`sklearn.preprocessing.LabelEncoder`, `sklearn.preprocessing.OneHotEncoder`, `sklearn.preprocessing.PolynomialFeatures`):**
+  * `fitTransform(NDArray X)`: Encodes categorical labels or synthesizes higher-order polynomial interaction features.
+
+### 4.3 Model Selection & Validation: `sklearn.model_selection.ModelSelection`
+Facilitates partitioning of datasets and testing of generalization capacities.
+* `trainTestSplit(NDArray X, int[] y, double test_size, int seed)`: Randomly splits features and targets into a partitioned array structure `Object[] {X_train, X_test, y_train, y_test}`.
+* `crossValScore(Object estimator, NDArray X, int[] y, int cv)`: Performs multi-threaded $K$-fold cross-validation splits and returns an array of validation scores.
+
+### 4.4 Dataset Utilities & Bunch Container
+Provides local datasets and data/target wrapping envelopes.
+
+* **Dataset Loaders (`sklearn.datasets.Datasets`):**
+  * `loadIris()`: Returns a `Bunch` container containing the Iris classification dataset.
+  * `makeRegression(int samples, int features, double noise, int seed)`: Generates synthetic regression datasets.
+  * `makeBlobs(int samples, int features, int centers, int seed)`: Generates synthetic clustering datasets.
+* **Bunch Envelope (`sklearn.datasets.Bunch`):**
+  * `getData()`: Returns the features NDArray.
+  * `getTarget()`: Returns the target labels array (e.g. `int[]` or `double[]`).
