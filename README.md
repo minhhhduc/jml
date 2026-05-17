@@ -100,35 +100,48 @@ Implements high-fidelity Cartesian plotting and pixel-level grid rendering.
 ---
 
 ### 4. SKLearn: Machine Learning Module
-A fully integrated, multi-threaded numerical estimation framework conforming to the Python Scikit-Learn paradigm.
+Exposes machine learning estimators, datasets, preprocessing scalers, and validation pipelines in Java, matching Python's Scikit-Learn API.
 
-```mermaid
-graph TD
-    X[Raw Tabular Relation] -->|Imputation| I[SimpleImputer]
-    I -->|Z-Score Scaling| S[StandardScaler]
-    S -->|Dimensionality Reduction| P[PCA]
-    P -->|Parallel Estimation| RF[RandomForestClassifier]
-    RF -->|Generalization Evaluation| CV[Cross-Validation / GridSearchCV]
+```java
+import sklearn.datasets.Datasets;
+import sklearn.datasets.Bunch;
+import sklearn.preprocessing.StandardScaler;
+import sklearn.model_selection.ModelSelection;
+import sklearn.ensemble.RandomForestClassifier;
+import numja.core.NDArray;
+
+public class MLExample {
+    public static void main(String[] args) {
+        // 1. Load the Iris dataset
+        Bunch iris = Datasets.loadIris();
+        NDArray X = iris.getData();
+        int[] y = iris.getTarget();
+
+        // 2. Partition into training and testing splits
+        Object[] split = ModelSelection.trainTestSplit(X, y, 0.3, 42);
+        NDArray X_train = (NDArray) split[0];
+        NDArray X_test = (NDArray) split[1];
+        int[] y_train = (int[]) split[2];
+        int[] y_test = (int[]) split[3];
+
+        // 3. Scale features using Z-score standardization
+        StandardScaler scaler = new StandardScaler();
+        NDArray X_train_scaled = scaler.fitTransform(X_train);
+        NDArray X_test_scaled = scaler.transform(X_test);
+
+        // 4. Instantiate and fit a multi-threaded Random Forest Classifier
+        RandomForestClassifier rf = new RandomForestClassifier(100) // 100 trees
+            .setMaxDepth(5)
+            .setRandomState(42);
+        rf.fit(X_train_scaled, y_train);
+
+        // 5. Predict and evaluate performance
+        int[] predictions = rf.predict(X_test_scaled);
+        double accuracy = rf.score(X_test_scaled, y_test);
+        System.out.println("Model Test Accuracy: " + accuracy);
+    }
+}
 ```
-
-#### 4.1 Numerical Transformations & Scaling (Preprocessing)
-* **Standardization:** Transforms variables to conform to standard normal bounds:
-  $$z = \frac{x - \mu}{\sigma}$$
-* **MinMax Normalization:** Linearly projects domains into $[a, b]$:
-  $$x' = a + \frac{(x - x_{\min})(b - a)}{x_{\max} - x_{\min}}$$
-* **Robust Scaling:** Uses median $\tilde{x}$ and Interquartile Range (IQR) for high resistance against outliers:
-  $$x' = \frac{x - \tilde{x}}{\text{IQR}}$$
-
-#### 4.2 Supervised Learning Models
-* **Decision Boundary Impurity Splits:** Tree nodes optimize splits using Gini Index or Information Entropy:
-  $$I_{Gini}(p) = 1 - \sum_{i=1}^{k} p_i^2, \quad I_{Entropy}(p) = -\sum_{i=1}^{k} p_i \log_2(p_i)$$
-* **Random Forest Ensembles:** Parallelized training of $B$ independent estimators using modern multi-threading (`n_jobs=-1`):
-  $$\hat{y} = \operatorname{mode}\{\hat{y}_1, \hat{y}_2, \dots, \hat{y}_B\}$$
-* **Neural Network Backpropagation (MLP):** Supports deep neural network architectures containing parameterized activation kernels (Sigmoid, Hyperbolic Tangent Tanh, Rectified Linear Unit ReLU) and categorical Softmax outputs.
-
-#### 4.3 Validation & Optimization Pipelines
-* **Composite Estimator Pipelines:** Streamlines structural transformations (`SimpleImputer` ➔ `StandardScaler` ➔ `Estimator`) via the unified `Pipeline` class.
-* **Hyperparameter Sweeps:** The `GridSearchCV` class automates search space optimization using multi-threaded execution pipelines (`n_jobs=-1`).
 
 ---
 **NumJa — Bridging JVM performance with the expressive elegance of mathematical Python.**
