@@ -3,7 +3,7 @@
   "tasks": [
     {
       "label": "Chay Trong RAM (Khong tao .class)",
-      "type": "shell",
+      "type": "process",
       "command": "java",
       "args": [
         "-cp",
