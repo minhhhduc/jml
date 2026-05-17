@@ -1,10 +1,10 @@
-# 🏆 NumJa: Scientific Technical Specification & API Reference
+# NumJa: Scientific Technical Specification & API Reference
 > **Release Version 0.2.0 - Closed-Source Release Architecture**
 > This document serves as the formal mathematical specification and scientific API catalog for the **NumJa** modular ecosystem. NumJa provides a highly efficient, standalone Java runtime simulating Python's scientific computation stack (NumPy, Pandas, Matplotlib, Seaborn, and Scikit-Learn) with built-in multi-threaded accelerations.
 
 ---
 
-## 📊 1. NumJa Core: Dense Vector & Matrix Algebra
+## 1. NumJa Core: Dense Vector & Matrix Algebra
 The foundational mathematical engine for dense vector and matrix representations, vector operations, and matrix factorizations.
 
 ### 1.1 Dense Array Class: `numja.core.NDArray`
@@ -52,7 +52,7 @@ Rigorous numeric implementations of core linear algebra routines:
 
 ---
 
-## 🐼 2. Pandas: Relational & Tabular Data Structures
+## 2. Pandas: Relational & Tabular Data Structures
 A rigorous framework for structural manipulation of tabular data representations under labeled coordinate systems.
 
 ### 2.1 Tabular Loader: `pandas.Pandas`
@@ -82,7 +82,7 @@ A 1D labeled array representing a single random variable (column vector) with de
 
 ---
 
-## 📈 3. Matplotlib & Seaborn: Visual Data Representation
+## 3. Matplotlib & Seaborn: Visual Data Representation
 Two-dimensional graphical visualization engines utilizing high-performance pixel-level rendering.
 
 ### 3.1 Graphical Engine: `matplotlib.Matplotlib`
@@ -99,10 +99,10 @@ Two-dimensional graphical visualization engines utilizing high-performance pixel
 
 ---
 
-## 🤖 5. SKLearn: Statistical Machine Learning Suite
-A fully integrated, multi-threaded numerical estimation framework conforming to the Python **Scikit-Learn** paradigm.
+## 4. SKLearn: Statistical Machine Learning Suite
+A fully integrated, multi-threaded numerical estimation framework conforming to the Python Scikit-Learn paradigm.
 
-### 5.1 Supervised Classifiers
+### 4.1 Supervised Classifiers
 Supervised estimators for predicting qualitative targets $y \in \{C_1, C_2, \dots, C_k\}$:
 * `sklearn.tree.DecisionTreeClassifier`: Minimizes classification impurity metrics (Gini index or Information Entropy):
   $$I_{Gini}(p) = 1 - \sum_{i=1}^{k} p_i^2, \quad I_{Entropy}(p) = -\sum_{i=1}^{k} p_i \log_2(p_i)$$
@@ -118,7 +118,7 @@ Supervised estimators for predicting qualitative targets $y \in \{C_1, C_2, \dot
 * `sklearn.ensemble.GradientBoostingClassifier` / `AdaBoostClassifier`: Boosted weak learners optimized through sequential cost reduction.
 * `sklearn.neural_network.MLPClassifier`: Multi-Layer Perceptron trained using backpropagation with custom activations (Logistic, ReLU, Tanh) and categorical Softmax outputs.
 
-### 5.2 Supervised Regressors
+### 4.2 Supervised Regressors
 Predicts quantitative target vectors $y \in \mathbb{R}$:
 * `sklearn.linear_model.LinearRegression`: Fits parameters $\theta$ to minimize Residual Sum of Squares (RSS):
   $$J(\theta) = \sum_{i=1}^{m} (h_\theta(x^{(i)}) - y^{(i)})^2$$
@@ -129,7 +129,7 @@ Predicts quantitative target vectors $y \in \mathbb{R}$:
 * `sklearn.tree.DecisionTreeRegressor` / `RandomForestRegressor`: Tree-based piecewise continuous regression estimators.
 * `sklearn.neighbors.KNeighborsRegressor` / `SVR` / `MLPRegressor`: Regressors utilizing local geometric density, Support Vector formulations, and Multi-Layer Perceptron architectures.
 
-### 5.3 Numerical Feature Transforms (Preprocessing)
+### 4.3 Numerical Feature Transforms (Preprocessing)
 * `sklearn.preprocessing.StandardScaler`: Transforms features to conform to the standard normal distribution $\mathcal{N}(0, 1)$:
   $$z = \frac{x - \mu}{\sigma}$$
 * `sklearn.preprocessing.MinMaxScaler`: Scales bounded domains linearly to target interval $[a, b]$:
@@ -141,13 +141,13 @@ Predicts quantitative target vectors $y \in \mathbb{R}$:
   $$\phi(x) = [1, x_1, x_2, x_1^2, x_1 x_2, x_2^2]$$
 * `sklearn.impute.SimpleImputer`: Fills incomplete records using statistical estimators (Mean, Median, or Constant value).
 
-### 5.4 Model Selection & Pipelines
+### 4.4 Model Selection & Pipelines
 * `sklearn.model_selection.ModelSelection`:
   * `trainTestSplit()`: Partitions datasets randomly while preserving relative label frequencies.
   * `crossValScore()`: Computes $K$-fold cross-validation scores to assess generalization.
 * `sklearn.model_selection.GridSearchCV`: Performs brute-force multi-threaded parameter sweeps (`n_jobs=-1`) to identify optimal estimators.
 * `sklearn.pipeline.Pipeline`: Implements a unified composite pipeline structure wrapping sequential transformations and estimation steps.
 
-### 5.5 Datasets & Utilities
+### 4.5 Datasets & Utilities
 * `sklearn.datasets.Datasets`: High-level loaders (`loadIris()`) and synthetic dataset generators (`makeRegression()`, `makeBlobs()`).
 * `sklearn.datasets.Bunch`: A key-value dictionary container for data and targets.

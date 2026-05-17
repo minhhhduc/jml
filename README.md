@@ -1,29 +1,44 @@
-# 📊 NumJa: High-Performance Matrix Algebra & Statistical Learning Framework for Java
+# NumJa: High-Performance Matrix Algebra & Statistical Learning Framework for Java
 > **Release Version 0.2.0 - Closed-Source Modular Release**
 > NumJa is a high-performance, zero-dependency, and mathematically rigorous matrix algebra and statistical learning library developed natively for the Java Virtual Machine (JVM). It offers an intuitive, Python-equivalent syntax simulating NumPy, Pandas, Matplotlib, Seaborn, and Scikit-Learn, optimized for low-latency offline executions.
 
 ---
 
-## 🔬 Scientific Abstract & Motivation
+## Scientific Abstract & Motivation
 In scientific computing and data science, the Python ecosystem (NumPy, SciPy, Scikit-Learn) has established dominance due to expressive API semantics and vectorized execution. However, deploying these models onto the JVM often introduces significant JNI overhead, dependency conflicts, or deployment complexities. 
 
-**NumJa** bridges this gap by introducing a native, fully modular, and highly optimized mathematical framework. By wrapping underlying multi-threaded BLAS-like routines, NumJa enables high-throughput matrix-oriented data pipelines directly within the JVM. Furthermore, the compiled modules are protected via advanced **ProGuard Obfuscation** to secure proprietary algorithmic assets during offline deployment.
+**NumJa** bridges this gap by introducing a native, fully modular, and highly optimized mathematical framework. By wrapping underlying multi-threaded BLAS-like routines, NumJa enables high-throughput matrix-oriented data pipelines directly within the JVM. Furthermore, the compiled modules are protected via advanced ProGuard Obfuscation to secure proprietary algorithmic assets during offline deployment.
 
 ---
 
-## 📦 Architectural Specifications & Decoupling
+## Architectural Specifications & Decoupling
 
 NumJa is distributed as a suite of five decoupled, highly interoperable JAR modules targeting Java 11 through Java 25+:
 
 ```text
 dist/
-├── numja.jar          ✅ 1D vector & 2D matrix representations (NDArray) & matrix decompositions
-├── pandas.jar         ✅ Labeled relational manifolds (DataFrame & Series) & CSV parser
-├── matplotlib.jar     ✅ 2D plotting state-machine & high-performance grid renderer (imshow)
-├── seaborn.jar        ✅ Confusion matrix visualizers & statistical heatmaps
-├── sklearn.jar        ✅ Comprehensive machine learning estimators, preprocessing & validation pipelines
-├── libs/              ✅ Third-party library dependencies (Commons-Math, EJML, JFreeChart...)
-└── datasets/          ✅ Sample datasets for machine learning validation (iris.csv...)
+├── matplotlib.jar
+├── numja.jar
+├── pandas.jar
+├── seaborn.jar
+├── sklearn.jar
+├── libs/
+│   ├── commons-math3-3.6.1.jar
+│   ├── ejml-core-0.43.1.jar
+│   ├── ejml-ddense-0.43.1.jar
+│   └── jfreechart-1.5.3.jar
+└── datasets/
+    ├── breast_cancer.csv
+    ├── california_housing.csv
+    ├── diabetes.csv
+    ├── diamonds.csv
+    ├── digits.csv
+    ├── flights.csv
+    ├── iris.csv
+    ├── penguins.csv
+    ├── tips.csv
+    ├── titanic.csv
+    └── wine.csv
 ```
 
 > [!NOTE]  
@@ -32,9 +47,9 @@ dist/
 
 ---
 
-## 🚀 Core Scientific Modules & Mathematical Formulations
+## Core Scientific Modules & Mathematical Formulations
 
-### 📊 1. NumJa Core: Dense Vector & Matrix Algebra
+### 1. NumJa Core: Dense Vector & Matrix Algebra
 Handles 1D vector and 2D matrix representations and rigorous numerical linear algebra.
 
 * **Vector & Matrix Concept:**
@@ -57,7 +72,7 @@ Handles 1D vector and 2D matrix representations and rigorous numerical linear al
 
 ---
 
-### 🐼 2. Pandas: Relational Tabular Analysis
+### 2. Pandas: Relational Tabular Analysis
 Manages structural data representations under discrete labeled indexing coordinate systems.
 
 * **Laminated Data Structures:**
@@ -72,8 +87,8 @@ Manages structural data representations under discrete labeled indexing coordina
 
 ---
 
-### 📈 3. Matplotlib & Seaborn: Two-Dimensional Graphical Visualizations
-Implements high-fidelity Cartesian plotting and statistical pixel-level grid rendering.
+### 3. Matplotlib & Seaborn: Two-Dimensional Graphical Visualizations
+Implements high-fidelity Cartesian plotting and pixel-level grid rendering.
 
 * **State-Machine Plotting (`Matplotlib`):**
   Manages continuous function mappings (`plot`), discrete scattering distributions (`scatter`), and graphical canvas manipulation (`clf()`, `title()`, `savefig()`).
@@ -84,8 +99,8 @@ Implements high-fidelity Cartesian plotting and statistical pixel-level grid ren
 
 ---
 
-### 🤖 4. SKLearn: High-Dimensional Machine Learning Suite
-A fully integrated, multi-threaded numerical estimation framework conforming to the Python **Scikit-Learn** paradigm.
+### 4. SKLearn: High-Dimensional Machine Learning Suite
+A fully integrated, multi-threaded numerical estimation framework conforming to the Python Scikit-Learn paradigm.
 
 ```mermaid
 graph TD
