@@ -4,30 +4,31 @@
 
 ---
 
-## 📊 1. NumJa Core: N-Dimensional Tensor Algebra
-The foundational mathematical engine for dense tensor representations, vector operations, and matrix factorizations.
+## 📊 1. NumJa Core: Dense Vector & Matrix Algebra
+The foundational mathematical engine for dense vector and matrix representations, vector operations, and matrix factorizations.
 
-### 1.1 Tensor Class: `numja.core.NDArray`
-An $N$-dimensional array (tensor) represented mathematically as $\mathcal{A} \in \mathbb{R}^{d_1 \times d_2 \times \dots \times d_n}$, where $d_i$ defines the cardinality of the $i$-th dimension.
+### 1.1 Dense Array Class: `numja.core.NDArray`
+A dense array wrapping EJML's row-major dense matrix (`DMatrixRMaj`), representing a 1D column vector ($A \in \mathbb{R}^{d_1}$) or a 2D matrix ($A \in \mathbb{R}^{d_1 \times d_2}$).
 * **Algebraic Methods & Transformations:**
-  * $\operatorname{shape}(\mathcal{A})$: Returns the dimensional tuple $(d_1, d_2, \dots, d_n)$.
-  * $\operatorname{reshape}(\mathcal{A}, s_1, s_2, \dots, s_k)$: Maps $\mathcal{A}$ to a new layout under constraint $\prod_{i} d_i = \prod_{j} s_j$.
-  * $\mathcal{A}^T$: Tensor transposition. For a 2D matrix, $A^T_{ij} = A_{ji}$.
-  * `toArray()` / `toArray2D()`: Serializes tensor data into native Java arrays (`double[]` / `double[][]`).
-* **Vectorized Algebra & Broadcasting Semantics:**
-  * `add(NDArray)` / `add(double)`: Tensor addition $\mathcal{C} = \mathcal{A} + \mathcal{B}$. Automatically applies broadcasting rules if shapes differ by aligning trailing dimensions to singleton dimensions.
-  * `subtract(NDArray)` / `subtract(double)`: Tensor subtraction $\mathcal{C} = \mathcal{A} - \mathcal{B}$.
-  * `multiply(NDArray)` / `multiply(double)`: Hadamard (element-wise) product $\mathcal{C} = \mathcal{A} \odot \mathcal{B}$.
-  * `divide(NDArray)` / `divide(double)`: Element-wise quotient $\mathcal{C}_{i} = \mathcal{A}_{i} / \mathcal{B}_{i}$.
+  * $\operatorname{shape}(A)$: Returns the dimensional tuple $(d_1)$ for 1D or $(d_1, d_2)$ for 2D.
+  * $\operatorname{reshape}(A, s_1, s_2)$: Re-indexes elements into a new 1D or 2D shape under constraint $\prod d_i = \prod s_j$.
+  * $A^T$: Matrix transposition ($A^T_{ij} = A_{ji}$).
+  * `toArray()`: Serializes data into a native Java 2D array (`double[][]`).
+  * `toDoubleArray()`: Serializes data into a flat 1D Java array (`double[]`).
+* **Vectorized Algebra & Operations:**
+  * `add(NDArray)` / `add(double)`: Computes matrix-matrix addition ($C = A + B$) or element-wise scalar addition.
+  * `subtract(NDArray)` / `subtract(double)`: Computes matrix-matrix subtraction ($C = A - B$) or element-wise scalar subtraction.
+  * `multiply(NDArray)` / `multiply(double)`: Computes Hadamard (element-wise) product ($C = A \odot B$) or scalar multiplication.
+  * `divide(NDArray)` / `divide(double)`: Computes element-wise division ($C_i = A_i / B_i$) or scalar division.
   * `dot(NDArray)` / `matmul(NDArray)`: General Matrix Multiplication (GEMM) using high-performance parallel BLAS-like routines:
     $$C_{ik} = \sum_{j=1}^{m} A_{ij} B_{jk}$$
 
 ### 1.2 Factory & Statistical Core: `numja.NumJa`
 Exposes statistical operators and array instantiation kernels:
-* `array(double[][])` / `array(double...)`: Projects raw Java arrays into the tensor space $\mathbb{R}^{d_1 \times \dots \times d_n}$.
-* `zeros(int...)` / `ones(int...)`: Instantiates null or identity tensors.
+* `array(double[][])` / `array(double...)`: Creates `NDArray` representing a 1D column vector or a 2D matrix.
+* `zeros(int...)` / `ones(int...)`: Instantiates zero or identity vectors/matrices of target dimensions.
 * `linspace(a, b, n)`: Computes an equidistant partition of the closed interval $[a, b]$ with cardinality $n$.
-* $\mu(\mathcal{A})$ / $\sigma(\mathcal{A})$: Computes the empirical mean and standard deviation along specified axes:
+* $\mu(A)$ / $\sigma(A)$: Computes the empirical mean and standard deviation of the matrix:
   $$\mu = \frac{1}{N} \sum_{i=1}^{N} x_i, \quad \sigma = \sqrt{\frac{1}{N-1} \sum_{i=1}^{N} (x_i - \mu)^2}$$
 
 ### 1.3 Matrix Decompositions: `numja.linalg.LinAlg`
@@ -74,7 +75,7 @@ A 2D structural table with vertical and horizontal indexing maps.
   * `dropna()` / `fillna(value)`: Cleans incomplete manifolds by dropping or imputing missing elements (NaN).
   * `sort_values(col)`: Performs ordinal sort based on target column values.
   * `groupby(col)`: Performs partition clustering based on feature equivalence classes.
-  * `toNDArray()`: Casts the numeric values of the DataFrame into the dense tensor space $\mathbb{R}^{m \times n}$.
+  * `toNDArray()`: Casts the numeric values of the DataFrame into a dense matrix $A \in \mathbb{R}^{m \times n}$.
 
 ### 2.3 Labeled Vector: `pandas.Series`
 A 1D labeled array representing a single random variable (column vector) with descriptive univariate statistical methods.
