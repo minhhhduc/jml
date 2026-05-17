@@ -1,0 +1,13 @@
+{
+    "java.project.referencedLibraries": [
+        "dist/*.jar",
+        "dist/libs/*.jar"
+    ],
+    "java.project.sourcePaths": [
+        "examples"
+    ],
+    "java.jdt.ls.vmargs": "-XX:+UseG1GC -XX:+UseStringDeduplication -Xmx2G -Xms512m",
+    "java.project.outputPath": "out/classes",
+    "java.import.maven.enabled": false,
+    "java.import.gradle.enabled": false
+}

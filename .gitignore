@@ -1,0 +1,114 @@
+# .gitignore for NumJa - Java NumPy-like Library
+
+## Protected Source Code & Developer Tooling (IGNORE FOR CLOSED-SOURCE RELEASES)
+/modules/
+/libs/
+/.github/
+/pom.xml
+/proguard.pro
+/CONTRIBUTING.md
+
+## Build & Compilation Artifacts (GEN AUTOMATICALLY - IGNORE)
+/target/
+/build/
+/out/
+*.class
+*.o
+*.so
+*.dylib
+
+## IDE & Editor
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.atom/
+.sublime-project
+.sublime-workspace
+
+## Java/Maven Build
+.classpath
+.project
+.settings/
+*.war
+*.ear
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+## Python Artifacts (if any)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv
+
+## OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+## Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+## Temporary & Backup Files
+*.tmp
+*.bak
+*.swp
+*~
+*.exe
+*.dll
+
+## Logs
+*.log
+logs/
+
+## Distribution (Keep dist folder tracked so other users can clone and use JARs directly)
+!/dist/
+*.zip
+*.whl
+
+# ===== IMPORTANT: ALLOWED FILES (DO NOT IGNORE) =====
+# Giữ lại những file sau để máy khác clone được ngay:
+# - libs/*.jar (thư viện phụ thuộc)
+# - scripts/ (build scripts)
+# - examples/ (ví dụ code)
+
+## Documentation
+docs/_build/
+site/
+
+## Environment
+.env
+.env.local
+.env.*.local
+
+## Miscellaneous
+.cache/
+.hypothesis/
+*.egg-info/
+build/
+.venv
+
+## Temporary Test Outputs
+_temp_*.png
+_test_out.csv
