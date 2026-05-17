@@ -1,13 +1,13 @@
-# 📊 NumJa: High-Performance Tensor Computations & Statistical Learning Framework for Java
+# 📊 NumJa: High-Performance Matrix Algebra & Statistical Learning Framework for Java
 > **Release Version 0.2.0 - Closed-Source Modular Release**
-> NumJa is a high-performance, zero-dependency, and mathematically rigorous tensor algebra and statistical learning library developed natively for the Java Virtual Machine (JVM). It offers an intuitive, Python-equivalent syntax simulating NumPy, Pandas, Matplotlib, Seaborn, and Scikit-Learn, optimized for low-latency offline executions.
+> NumJa is a high-performance, zero-dependency, and mathematically rigorous matrix algebra and statistical learning library developed natively for the Java Virtual Machine (JVM). It offers an intuitive, Python-equivalent syntax simulating NumPy, Pandas, Matplotlib, Seaborn, and Scikit-Learn, optimized for low-latency offline executions.
 
 ---
 
 ## 🔬 Scientific Abstract & Motivation
 In scientific computing and data science, the Python ecosystem (NumPy, SciPy, Scikit-Learn) has established dominance due to expressive API semantics and vectorized execution. However, deploying these models onto the JVM often introduces significant JNI overhead, dependency conflicts, or deployment complexities. 
 
-**NumJa** bridges this gap by introducing a native, fully modular, and highly optimized mathematical framework. By wrapping underlying multi-threaded BLAS-like routines and implementing automatic tensor broadcasting, NumJa enables high-throughput data pipelines directly within the JVM. Furthermore, the compiled modules are protected via advanced **ProGuard Obfuscation** to secure proprietary algorithmic assets during offline deployment.
+**NumJa** bridges this gap by introducing a native, fully modular, and highly optimized mathematical framework. By wrapping underlying multi-threaded BLAS-like routines, NumJa enables high-throughput matrix-oriented data pipelines directly within the JVM. Furthermore, the compiled modules are protected via advanced **ProGuard Obfuscation** to secure proprietary algorithmic assets during offline deployment.
 
 ---
 
@@ -17,7 +17,7 @@ NumJa is distributed as a suite of five decoupled, highly interoperable JAR modu
 
 ```text
 dist/
-├── numja.jar          ✅ N-dimensional tensor representation (NDArray) & matrix decompositions
+├── numja.jar          ✅ 1D vector & 2D matrix representations (NDArray) & matrix decompositions
 ├── pandas.jar         ✅ Labeled relational manifolds (DataFrame & Series) & CSV parser
 ├── matplotlib.jar     ✅ 2D plotting state-machine & high-performance grid renderer (imshow)
 ├── seaborn.jar        ✅ Confusion matrix visualizers & statistical heatmaps
@@ -32,11 +32,11 @@ dist/
 
 ## 🚀 Core Scientific Modules & Mathematical Formulations
 
-### 📊 1. NumJa Core: Dense Tensor Algebra
-Handles N-dimensional array representations and rigorous numerical linear algebra.
+### 📊 1. NumJa Core: Dense Vector & Matrix Algebra
+Handles 1D vector and 2D matrix representations and rigorous numerical linear algebra.
 
-* **Tensor Concept ($\mathcal{A} \in \mathbb{R}^{d_1 \times \dots \times d_n}$):**
-  The central class `numja.core.NDArray` encapsulates dense multi-dimensional arrays, supporting arbitrary reshaping, vectorization, and automatic **Broadcasting Semantics** to align trailing singleton dimensions during binary operations.
+* **Vector & Matrix Concept:**
+  The central class `numja.core.NDArray` wraps EJML's `DMatrixRMaj` to encapsulate dense 1D column vectors ($A \in \mathbb{R}^{d_1}$) and 2D matrices ($A \in \mathbb{R}^{d_1 \times d_2}$), supporting reshaping, transposition, and vectorized operations.
 * **General Matrix Multiplication (GEMM):**
   Matrix multiplication on 2D arrays is mapped via parallelized, cache-friendly implementations:
   $$C_{ik} = \sum_{j=1}^{m} A_{ij} B_{jk}$$
