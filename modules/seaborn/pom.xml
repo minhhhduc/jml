@@ -16,6 +16,21 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.numja</groupId>
+            <artifactId>numja-core</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.numja</groupId>
+            <artifactId>matplotlib</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.numja</groupId>
+            <artifactId>pandas-wrapper</artifactId>
+            <version>0.1.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.jfree</groupId>
             <artifactId>jfreechart</artifactId>
             <version>1.5.3</version>

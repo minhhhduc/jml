@@ -15,7 +15,8 @@ public class MatplotlibTest {
         File out = File.createTempFile("matplotlib-test-", ".png");
         out.deleteOnExit();
 
-        Matplotlib.plotLine(x, y, "test", out.getAbsolutePath());
+        Matplotlib.plot(x, y, "test");
+        Matplotlib.savefig(out.getAbsolutePath());
 
         assertTrue("Output PNG should exist", out.exists());
         assertTrue("Output PNG should not be empty", out.length() > 0);

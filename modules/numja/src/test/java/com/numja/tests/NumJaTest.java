@@ -156,21 +156,21 @@ public class NumJaTest {
         
         // SVD / QR / Eigen (implementation may be placeholder)
         try {
-            SVDResult svd = NumJa.svd(A);
+            SVD svd = NumJa.svd(A);
             System.out.println("SVD result: " + (svd != null));
         } catch (Exception e) {
             System.out.println("SVD error: " + e.getMessage());
         }
 
         try {
-            QRResult qr = NumJa.qr(A);
+            QR qr = NumJa.qr(A);
             System.out.println("QR computed: " + (qr != null));
         } catch (Exception e) {
             System.out.println("QR error: " + e.getMessage());
         }
 
         try {
-            EigenResult eigen = NumJa.eig(A);
+            Eigen eigen = NumJa.eig(A);
             System.out.println("Eigen result: " + (eigen != null));
         } catch (Exception e) {
             System.out.println("Eigenvalue error: " + e.getMessage());

@@ -68,6 +68,5 @@
         <module>modules/seaborn</module>
         <module>modules/pandas</module>
         <module>modules/sklearn</module>
-        <module>examples</module>
     </modules>
 </project>

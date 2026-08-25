@@ -17,7 +17,7 @@ public class NDArray {
     /**
      * Create NDArray from 1D data
      */
-    public NDArray(double[] data) {
+    public NDArray(double... data) {
         this.data = new DMatrixRMaj(data.length, 1, true, data);
         this.shape = new int[]{data.length};
         this.ndim = 1;

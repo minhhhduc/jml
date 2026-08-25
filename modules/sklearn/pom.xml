@@ -6,7 +6,7 @@
 
     <parent>
         <groupId>com.numja</groupId>
-        <artifactId>java_ml</artifactId>
+        <artifactId>numja</artifactId>
         <version>0.1.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
@@ -19,14 +19,14 @@
         <!-- NumJa Core -->
         <dependency>
             <groupId>com.numja</groupId>
-            <artifactId>numja</artifactId>
+            <artifactId>numja-core</artifactId>
             <version>0.1.0</version>
         </dependency>
 
         <!-- Pandas for DataFrame support -->
         <dependency>
             <groupId>com.numja</groupId>
-            <artifactId>pandas</artifactId>
+            <artifactId>pandas-wrapper</artifactId>
             <version>0.1.0</version>
         </dependency>
 
