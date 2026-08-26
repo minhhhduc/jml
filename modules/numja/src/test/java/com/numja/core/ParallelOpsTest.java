@@ -1,5 +1,6 @@
 package numja.core;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.Random;
@@ -21,6 +22,13 @@ public class ParallelOpsTest {
     private static double relErr(double actual, double expected) {
         double denom = Math.max(Math.abs(expected), 1e-30);
         return Math.abs(actual - expected) / denom;
+    }
+
+    @After
+    public void reset() {
+        // Hygiene: even though no current test in this class mutates testThresholdOverride,
+        // a future test added here must not leak the override across test classes (T-2-05).
+        ParallelOps.resetThresholdForTesting();
     }
 
     @Test
