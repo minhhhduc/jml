@@ -1,12 +1,42 @@
 # Phase 2: CPU Parallel Core (Threads) - Research
 
-**Researched:** 2026-08-27
+**Researched:** 2026-08-27 (force-refresh)
 **Domain:** Multi-threaded NDArray elementwise/reduce via ForkJoinPool; SIMD evaluation
 **Confidence:** MEDIUM-HIGH
 
+## Delta vs Prior Research (2026-08-27 refresh)
+
+Force-refresh triggered after plans written + plan-checker PASSED. Re-checked the 4 prior Open Questions and scanned for drift between research, plans, and live code. Result: **no material change.** All 4 resolutions still hold.
+
+| # | Open Question | Prior Resolution | Verified 2026-08-27 (refresh) | Status |
+|---|---------------|------------------|--------------------------------|--------|
+| Q1 | Exact `LEAF_CUTOFF` value | Ship 16_384 as default `static final`; defer sweep | NDArray.java unchanged; Plan 01 §02-01-02 action 2 still declares `static final int LEAF_CUTOFF = 16_384;` (pkg-private tuning knob) | HELD |
+| Q2 | `DMatrixRMaj.data` accessible / non-private? | Confirmed public `double[]` per NDArray.java:13 + EJML 0.43.1 | Re-grepped NDArray.java: direct access at lines 134, 169, 226, 244, 255, 266, 277, 288, 299, 310, 321, 332, 350, 363, 376, 394 (16 sites). EJML version in `modules/numja/pom.xml:22-26` is still 0.43.1 (no bump since prior research). VERSIONS.md confirms 0.45.0 (May 2026) has same `DMatrixRMaj.data` shape, so the resolution holds regardless of which version is pinned | HELD |
+| Q3 | Hybrid P/E-core ForkJoin worker affinity | Keep JMH `@Fork(1)`, take median of ≥5 fresh runs, document in 02-BASELINE-AFTER.md §Methodology | `bench/src/main/java/bench/CoreBench.java` JMH annotations unchanged; Plan 02 §02-02-03 action 3 explicitly says "Do NOT modify class-level annotations"; Plan 04 §02-04-03 Step B action 8 includes the Methodology subsection | HELD |
+| Q4 | `ThreadPoolConfig.setThreads` + FJP coexistence | Add `getForkJoinPool()` as lazy singleton via double-checked locking; `setThreads` does NOT recreate pool (matches existing semantics); add limitation comment | `modules/numja/src/main/java/numja/config/ThreadPoolConfig.java` lines 11-23 confirm `currentThreads` field + `setThreads()` mutates the integer only; new `getForkJoinPool()` accessor (Plan 01 §02-01-01 action 3) inserts after line 75 `get_threads()`, double-checked locking, with javadoc noting `setThreads` limitation | HELD |
+
+**Plan-vs-research drift check:** 0 inconsistencies found.
+
+- Plan 01 ↔ research §Pattern 3 (lazy FJP), §Open Q#4 (setThreads doc) — match.
+- Plan 02 ↔ research §Pattern 1 (threshold-gated), §Pitfall 7 (no public API drift), §Pitfall 5 (numerical stability) — match.
+- Plan 03 ↔ research §Pattern 2 (tree-partitioned reduce), §Pitfall 5 — match. `mean()` correctly NOT wrapped (delgates via `sum()`).
+- Plan 04 ↔ research §Pitfall 3 (hybrid variance methodology), §Success Criteria #1/#2 — match.
+
+**New findings since prior research:**
+
+1. **Repo still pins EJML 0.43.1** (`modules/numja/pom.xml:22-26`); VERSIONS.md verified 0.45.0 stable but Phase 2 doesn't need the bump — 0.43.1's `DMatrixRMaj.data` is still a public `double[]`. Revisit at Phase 3 if matmul accuracy/threading work needs newer features.
+2. **JDK 25 Vector API still second preview (JEP 460)** per `VERSIONS.md` — CPU-03 defer holds. VERSIONS.md was refreshed 2026-08-26, one day before research date.
+3. **Test threshold hook (`setThresholdForTesting`)** is in scope (Plan 02 §02-02-01 action 4 + Plan 04 §02-04-01 action 5+7). It's package-private static (`static volatile int testThresholdOverride = -1;` + `static void setThresholdForTesting(int)` + `static void resetThresholdForTesting()`), used only by `ParallelElementwiseTest`, `ParallelReduceTest`, `ParallelRegressionTest` to force the sequential branch for timing baselines. The `@After` reset pattern prevents test-leak.
+4. **Model availability shift (this session uses `authropic/minimaxai/minimax-m3`)** — **no impact on toolchain notes.** All Phase 2 commands (`mvn -pl modules/numja -am test -Dtest=...`, `mvn -pl bench -am package -DskipTests`, `java -jar bench/target/benchmarks.jar ...`) are shell-level; none touch LLM toolchain. The Phase 2 BASELINE-AFTER doc + plan-checker verification are unaffected.
+5. **Stdlib new APIs (post-JDK 17):** `Arrays.parallelSetAll` / `Arrays.parallelPrefix` exist but neither solves Phase 2's problem. `parallelSetAll` is for filling (no second input), `parallelPrefix` is inclusive scan (sequential dependency kills parallel speedup for sum/reduce). RecursiveAction + raw `double[]` is still the right primitive.
+
+**Conclusion:** prior RESEARCH.md is still correct. Re-emit it intact below — the planner/VALIDATION.md regeneration consumes the Validation Architecture section verbatim and the rest is reference material for downstream plan executors.
+
+---
+
 ## Summary
 
-Phase 2 must convert the currently single-threaded `NDArray` elementwise and reduce ops (verified: all loops in `modules/numja/src/main/java/numja/core/NDArray.java:151-379`) into a parallel implementation that gains ≥2x on arrays ≥10⁶ while keeping small arrays (≤100k) within 10% of the baseline. Existing thread infra (`numja.config.ThreadPoolConfig` caps at 60% of cores, `sklearn.utils.ParallelUtils` allocates a fresh `FixedThreadPool` per call) is NOT the right shape for fine-grained elementwise work — both waste cycles on allocation and ignore work-stealing. The right primitive is `ForkJoinPool` with `RecursiveTask` decomposition, gated by a size threshold that dispatches to the sequential loop below the cutoff.
+Phase 2 must convert the currently single-threaded `NDArray` elementwise and reduce ops (verified: all loops in `modules/numja/src/main/java/numja/core/NDArray.java:151-379`) into a parallel implementation that gains ≥2x on arrays ≥10⁶ while keeping small arrays (≤100k) within 10% of the baseline. Existing thread infra (`numja.config.ThreadPoolConfig` caps at 60% of cores, `sklearn.utils.ParallelUtils` allocates a fresh `FixedThreadPool` per call) is NOT the right shape for fine-grained elementwise work — both waste cycles on allocation and ignore work-stealing. The right primitive is `ForkJoinPool` with `RecursiveAction` decomposition, gated by a size threshold that dispatches to the sequential loop below the cutoff.
 
 CPU-03 (Vector API) is **DEFER to Phase 3+**. Evidence: VERSIONS.md already verified JDK 25 Vector API is still second preview (JEP 460); shipping it now forces `--enable-preview` on every consumer JVM and breaks the closed-source "clone-and-run" model in `dist/*.jar`. The current baseline elementwise throughput (~100 MB/s for 10⁷ doubles) is memory-bandwidth-bound, so a 4x thread win already gets us to the ceiling — Vector API gives incremental 2-4x on top, worth a follow-up phase with its own benchmarking.
 
@@ -62,7 +92,7 @@ CPU-03 (Vector API) is **DEFER to Phase 3+**. Evidence: VERSIONS.md already veri
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
 | `java.util.concurrent.ForkJoinPool` | JDK 17 stdlib | Work-stealing executor | Documented best fit for CPU-bound fork/join decomposition (Oracle Javadoc); no extra dep |
-| `java.util.concurrent.RecursiveTask` | JDK 17 stdlib | Divide-and-conquer task | Required primitive for ForkJoinPool; gives us a clean "split if large, compute if small" pattern |
+| `java.util.concurrent.RecursiveAction` | JDK 17 stdlib | Divide-and-conquer task | Required primitive for ForkJoinPool; gives us a clean "split if large, compute if small" pattern |
 | `numja.config.ThreadPoolConfig` | existing | Pool sizing | Already singleton, already capped at 60% cores; reuse, don't fork |
 
 ### Supporting
@@ -357,19 +387,19 @@ public class ParallelRegressionTest {
 
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
-| A1 | `DMatrixRMaj.data` is a contiguous `double[]` laid out in row-major | Pattern 1 / Architecture | High — if it's column-major or has stride, our index assumption breaks. Quick verify: `DMatrixRMaj` is row-major per EJML docs; should check explicitly. |
+| A1 | `DMatrixRMaj.data` is a contiguous `double[]` laid out in row-major | Pattern 1 / Architecture | High — if it's column-major or has stride, our index assumption breaks. **Verified 2026-08-27 refresh:** direct access at 16 sites in NDArray.java (lines listed in Delta table); EJML 0.43.1 (pinned) and 0.45.0 (current stable per VERSIONS.md) both expose it as public. |
 | A2 | 100k elements is the right default threshold (matches success criterion "≤100k") | Pattern 1 / Standard Stack | Medium — could be 50k or 250k on this CPU; JMH sweep needed to confirm. Threshold is configurable so cost is small. |
 | A3 | Tree-reduce stays within relErr ≤1e-13 vs sequential for the test data | Pitfall 5 | Low — IEEE-754 worst-case for 10⁷ doubles is ~1e-10; we're 3 orders of magnitude inside the golden tolerance. Catastrophic cancellation in pathological inputs could exceed. |
 | A4 | Dedicated ForkJoinPool sized to `ThreadPoolConfig.getCurrentThreads()` (60% of cores = 7 on i7-1255U) gives ≥2x speedup | Pattern 3 / Standard Stack | Medium — depends on overhead vs work split; if overhead > gain, we ship <2x and fail success criterion #1. Mitigation: JVM warmup + measured fork count. |
-| A5 | JDK 25 Vector API still preview — confirmed by `.planning/phases/01-baseline-benchmark/VERSIONS.md` | State of the Art / CPU-03 defer | Low — if GA lands before Phase 3, recommendation flips. Re-verify at Phase 3 kickoff. |
+| A5 | JDK 25 Vector API still preview — confirmed by `.planning/phases/01-baseline-benchmark/VERSIONS.md` | State of the Art / CPU-03 defer | Low — if GA lands before Phase 3, recommendation flips. Re-verify at Phase 3 kickoff. **Refresh confirmed 2026-08-27:** VERSIONS.md verified 2026-08-26, JEP 460, JDK 25 still preview. |
 
-## Open Questions (RESOLVED)
+## Open Questions (RESOLVED — held from prior research)
 
 1. **Exact CUTOFF value for the parallel leaf (the inner-loop boundary inside `RecursiveAction`)**
    - **RESOLVED:** Ship with `LEAF_CUTOFF = 16_384` as default in `ParallelOps.java`; expose as public-static-final constant. Defer empirical sweep on i7-1255U to a follow-up optimization (no architectural impact — constant is one-line tunable).
 
 2. **Does EJML's `DMatrixRMaj.data` field stay accessible / non-private?**
-   - **RESOLVED:** Confirmed by reading `modules/numja/src/main/java/numja/core/NDArray.java:13` (declares `private DMatrixRMaj data;`) and existing usages at lines 168, 277. EJML 0.43.1 exposes `DMatrixRMaj.data` as a public `double[]` field. VERSIONS.md verifies EJML 0.45.0 same shape. Phase 2 implementation proceeds with direct `data.data[i]` access.
+   - **RESOLVED:** Confirmed by reading `modules/numja/src/main/java/numja/core/NDArray.java:13` (declares `private DMatrixRMaj data;`) and existing usages at lines 134, 169, 226, 244, 255, 266, 277, 288, 299, 310, 321, 332, 350, 363, 376, 394. EJML 0.43.1 (pinned in `modules/numja/pom.xml:22`) exposes `DMatrixRMaj.data` as a public `double[]` field. VERSIONS.md verifies EJML 0.45.0 same shape. Phase 2 implementation proceeds with direct `data.data[i]` access.
 
 3. **How do hybrid P/E-core threads interact with ForkJoinPool worker affinity?**
    - **RESOLVED:** Methodology note documented in `02-BASELINE-AFTER.md` §Methodology. Phase 2 keeps JMH fork=1 (matches Phase 1 baseline — cannot change without invalidating comparison); reports median of ≥5 fresh runs taken in same session on same power profile. Threshold-based regression test (`ParallelRegressionTest`) uses absolute ms budgets derived from that median, not single-run measurements.
@@ -384,7 +414,7 @@ public class ParallelRegressionTest {
 | JDK 17+ stdlib (ForkJoinPool) | Pattern 1, 2, 3 | ✓ | Temurin 25.0.3 | — |
 | Maven 3.9.15 | Build (per STATE.md) | ✓ | 3.9.15 (not on PATH) | Prefix `$env:Path` per STATE.md |
 | JMH 1.37 | Bench additions | ✓ | 1.37 (per `bench/pom.xml:22`) | — |
-| EJML 0.43.1 | NDArray data access | ✓ | 0.43.1 | Update to 0.45.0 if needed (VERSIONS.md verified) |
+| EJML 0.43.1 | NDArray data access | ✓ | 0.43.1 (pinned in `modules/numja/pom.xml:22-26`) | Update to 0.45.0 if needed (VERSIONS.md verified) |
 | `bench/` module | New regression test | ✓ | exists | — |
 
 **Missing dependencies with no fallback:** None.
@@ -418,7 +448,7 @@ public class ParallelRegressionTest {
 
 ### Wave 0 Gaps
 - [ ] `modules/numja/src/main/java/numja/core/ParallelOps.java` — ForkJoin elementwise + sum/min/max
-- [ ] `modules/numja/src/test/java/numja/core/ParallelRegressionTest.java` — JUnit assertions for ≥2x and <10% regression
+- [ ] `modules/numja/src/test/java/com/numja/core/ParallelRegressionTest.java` — JUnit assertions for ≥2x and <10% regression
 - [ ] `bench/src/main/java/bench/CoreBench.java` — add `SmallArrayState` (10k, 100k) + `add_elementwise_small` benchmark
 - [ ] `modules/numja/src/main/java/numja/config/ThreadPoolConfig.java` — add `getForkJoinPool()` singleton accessor
 - [ ] `02-BASELINE-AFTER.md` — fresh JMH numbers proving success criteria, methodology section on hybrid-core variance
@@ -430,7 +460,7 @@ public class ParallelRegressionTest {
 ### Applicable ASVS Categories
 
 | ASVS Category | Applies | Standard Control |
-|---------------|---------|-----------------|
+|---------------|---------|------------------|
 | V5 Input Validation | yes (shape check) | Existing `NDArray.add` line 152 already throws on shape mismatch — unchanged |
 | V6 Cryptography | no | CPU math only |
 | V2 Authentication | no | Library, no auth |
@@ -452,6 +482,7 @@ public class ParallelRegressionTest {
 - `modules/numja/src/main/java/numja/config/ThreadPoolConfig.java` (read 2026-08-27) — confirms 60% cap, singleton pattern, setThreads mutates integer only
 - `modules/sklearn/src/main/java/sklearn/utils/ParallelUtils.java` (read 2026-08-27) — confirms per-call FixedThreadPool anti-pattern
 - `bench/src/main/java/bench/CoreBench.java` (read 2026-08-27) — confirms JMH config, fork=1, wi=3/i=3
+- `modules/numja/pom.xml` (read 2026-08-27) — confirms EJML 0.43.1 pin, JUnit 4.13.2
 - `.planning/phases/01-baseline-benchmark/BASELINE.md` — baseline numbers (89.38ms add 10⁷, etc.)
 - `.planning/phases/01-baseline-benchmark/VERSIONS.md` — Vector API still preview JDK 24/25
 - `bench/pom.xml` (read 2026-08-27) — confirms `--release 17` for bench module, JMH 1.37
@@ -463,7 +494,7 @@ public class ParallelRegressionTest {
 
 ### Tertiary (LOW confidence — flagged for validation)
 - Assumption that 16k doubles is optimal leaf CUTOFF on i7-1255U — JMH sweep needed in Wave 0
-- Assumption that EJML `DMatrixRMaj.data` remains a public `double[]` field — confirm at implementation time
+- Assumption that EJML `DMatrixRMaj.data` remains a public `double[]` field — confirmed at 16 sites in NDArray.java (refresh verified)
 
 ## Metadata
 
@@ -475,3 +506,5 @@ public class ParallelRegressionTest {
 
 **Research date:** 2026-08-27
 **Valid until:** 2026-09-27 (30 days) — JDK 26 release (March 2026) GA could land Vector API and flip recommendation; unlikely to change within Phase 2 window
+
+## RESEARCH COMPLETE
