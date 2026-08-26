@@ -2,6 +2,7 @@
 
 ## Build & Compilation Artifacts (GEN AUTOMATICALLY - IGNORE)
 /target/
+target/
 /build/
 /out/
 *.class
@@ -105,4 +106,4 @@ build/
 _temp_*.png
 _test_out.csv
 sample_advanced.csv
-
+.claude
