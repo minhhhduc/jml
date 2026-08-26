@@ -400,44 +400,56 @@ public class NDArray {
      * Sum all elements
      */
     public double sum() {
-        double sum = 0;
-        for (int i = 0; i < data.numRows * data.numCols; i++) {
-            sum += data.data[i];
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            double sum = 0;
+            for (int i = 0; i < n; i++) {
+                sum += data.data[i];
+            }
+            return sum;
         }
-        return sum;
+        return ParallelOps.sum(data.data);
     }
-    
+
     /**
      * Calculate mean
      */
     public double mean() {
         return sum() / getSize();
     }
-    
+
     /**
      * Calculate minimum value
      */
     public double min() {
-        double min = Double.MAX_VALUE;
-        for (int i = 0; i < data.numRows * data.numCols; i++) {
-            if (data.data[i] < min) {
-                min = data.data[i];
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            double min = Double.MAX_VALUE;
+            for (int i = 0; i < n; i++) {
+                if (data.data[i] < min) {
+                    min = data.data[i];
+                }
             }
+            return min;
         }
-        return min;
+        return ParallelOps.min(data.data);
     }
-    
+
     /**
      * Calculate maximum value
      */
     public double max() {
-        double max = -Double.MAX_VALUE;
-        for (int i = 0; i < data.numRows * data.numCols; i++) {
-            if (data.data[i] > max) {
-                max = data.data[i];
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            double max = -Double.MAX_VALUE;
+            for (int i = 0; i < n; i++) {
+                if (data.data[i] > max) {
+                    max = data.data[i];
+                }
             }
+            return max;
         }
-        return max;
+        return ParallelOps.max(data.data);
     }
 
     /**
