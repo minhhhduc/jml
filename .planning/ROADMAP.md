@@ -27,6 +27,14 @@ Deliverables: BASELINE.md (12 ops), bench/ module, golden-value harness (4 ops v
 
 Requirements: CPU-01, CPU-02
 
+**Plan structure** (planned 2026-08-27, 4 plans / 4 waves):
+- Wave 1 — `02-01-PLAN.md`: Wave-0 infra (ParallelOps skeleton + ThreadPoolConfig.getForkJoinPool() singleton + ThreadPoolConfigTest + ParallelOpsTest)
+- Wave 2 — `02-02-PLAN.md`: CPU-01 elementwise dispatch (ParallelOps.elementwiseBinary wired into NDArray.add/sub/mul/div + ParallelElementwiseTest + CoreBench.SmallArrayState 10k/100k + add_elementwise_small)
+- Wave 3 — `02-03-PLAN.md`: CPU-02 reduce dispatch (ParallelOps.sum/min/max wired into NDArray.sum/mean/min/max + ParallelReduceTest reusing GoldenReferenceTest tolerance 1e-13)
+- Wave 4 — `02-04-PLAN.md`: Verify + BASELINE-AFTER (ParallelRegressionTest with 4 in-class tests + fresh JMH run committing 02-BASELINE-AFTER.md)
+
+CPU-03 (Vector API) **deferred** — JDK 25 still preview per VERSIONS.md; revisit Phase 3+.
+
 ### Phase 3: Numerical Accuracy Hardening
 **Goal:** Sai số không tăng theo kích thước dữ liệu; kết quả khớp NumPy golden values.
 **Mode:** mvp
