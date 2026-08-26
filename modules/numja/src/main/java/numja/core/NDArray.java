@@ -3,6 +3,7 @@ package numja.core;
 import org.ejml.data.DMatrixRMaj;
 import org.ejml.dense.row.CommonOps_DDRM;
 import org.ejml.dense.row.factory.DecompositionFactory_DDRM;
+
 import java.util.Arrays;
 
 /**
@@ -150,27 +151,38 @@ public class NDArray {
      */
     public NDArray add(NDArray other) {
         if (!Arrays.equals(shape, other.shape)) {
-            throw new IllegalArgumentException("Shape mismatch: " + 
+            throw new IllegalArgumentException("Shape mismatch: " +
                 Arrays.toString(shape) + " vs " + Arrays.toString(other.shape));
         }
-        
+
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        CommonOps_DDRM.add(data, other.data, result);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            CommonOps_DDRM.add(data, other.data, result);
+        } else {
+            ParallelOps.elementwiseBinary(data.data, other.data.data, result.data, Double::sum);
+        }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise addition with scalar
      */
     public NDArray add(double scalar) {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        result.setTo(data);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] += scalar;
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            result.setTo(data);
+            for (int i = 0; i < n; i++) {
+                result.data[i] += scalar;
+            }
+        } else {
+            result.setTo(data);
+            ParallelOps.scalarBinary(data.data, scalar, result.data, (x, s) -> x + s);
         }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise subtraction
      */
@@ -178,9 +190,14 @@ public class NDArray {
         if (!Arrays.equals(shape, other.shape)) {
             throw new IllegalArgumentException("Shape mismatch");
         }
-        
+
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        CommonOps_DDRM.subtract(data, other.data, result);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            CommonOps_DDRM.subtract(data, other.data, result);
+        } else {
+            ParallelOps.elementwiseBinary(data.data, other.data.data, result.data, (x, y) -> x - y);
+        }
         return new NDArray(result, shape.clone());
     }
     
@@ -198,21 +215,31 @@ public class NDArray {
         if (!Arrays.equals(shape, other.shape)) {
             throw new IllegalArgumentException("Shape mismatch");
         }
-        
+
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        CommonOps_DDRM.elementMult(data, other.data, result);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            CommonOps_DDRM.elementMult(data, other.data, result);
+        } else {
+            ParallelOps.elementwiseBinary(data.data, other.data.data, result.data, (x, y) -> x * y);
+        }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise multiplication with scalar
      */
     public NDArray multiply(double scalar) {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        CommonOps_DDRM.scale(scalar, data, result);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            CommonOps_DDRM.scale(scalar, data, result);
+        } else {
+            ParallelOps.scalarBinary(data.data, scalar, result.data, (x, s) -> x * s);
+        }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise division
      */
@@ -220,10 +247,15 @@ public class NDArray {
         if (!Arrays.equals(shape, other.shape)) {
             throw new IllegalArgumentException("Shape mismatch");
         }
-        
+
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = data.data[i] / other.data.data[i];
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = data.data[i] / other.data.data[i];
+            }
+        } else {
+            ParallelOps.elementwiseBinary(data.data, other.data.data, result.data, (x, y) -> x / y);
         }
         return new NDArray(result, shape.clone());
     }
@@ -240,74 +272,110 @@ public class NDArray {
      */
     public NDArray power(double exponent) {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = Math.pow(data.data[i], exponent);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = Math.pow(data.data[i], exponent);
+            }
+        } else {
+            result.setTo(data);
+            ParallelOps.elementwiseUnary(data.data, result.data, d -> Math.pow(d, exponent));
         }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise absolute value
      */
     public NDArray abs() {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = Math.abs(data.data[i]);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = Math.abs(data.data[i]);
+            }
+        } else {
+            ParallelOps.elementwiseUnary(data.data, result.data, Math::abs);
         }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise square root
      */
     public NDArray sqrt() {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = Math.sqrt(data.data[i]);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = Math.sqrt(data.data[i]);
+            }
+        } else {
+            ParallelOps.elementwiseUnary(data.data, result.data, Math::sqrt);
         }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise exponential
      */
     public NDArray exp() {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = Math.exp(data.data[i]);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = Math.exp(data.data[i]);
+            }
+        } else {
+            ParallelOps.elementwiseUnary(data.data, result.data, Math::exp);
         }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise natural logarithm
      */
     public NDArray log() {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = Math.log(data.data[i]);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = Math.log(data.data[i]);
+            }
+        } else {
+            ParallelOps.elementwiseUnary(data.data, result.data, Math::log);
         }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise sine
      */
     public NDArray sin() {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = Math.sin(data.data[i]);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = Math.sin(data.data[i]);
+            }
+        } else {
+            ParallelOps.elementwiseUnary(data.data, result.data, Math::sin);
         }
         return new NDArray(result, shape.clone());
     }
-    
+
     /**
      * Element-wise cosine
      */
     public NDArray cos() {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = Math.cos(data.data[i]);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = Math.cos(data.data[i]);
+            }
+        } else {
+            ParallelOps.elementwiseUnary(data.data, result.data, Math::cos);
         }
         return new NDArray(result, shape.clone());
     }
@@ -317,8 +385,13 @@ public class NDArray {
      */
     public NDArray tan() {
         DMatrixRMaj result = new DMatrixRMaj(data.numRows, data.numCols);
-        for (int i = 0; i < result.numRows * result.numCols; i++) {
-            result.data[i] = Math.tan(data.data[i]);
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                result.data[i] = Math.tan(data.data[i]);
+            }
+        } else {
+            ParallelOps.elementwiseUnary(data.data, result.data, Math::tan);
         }
         return new NDArray(result, shape.clone());
     }

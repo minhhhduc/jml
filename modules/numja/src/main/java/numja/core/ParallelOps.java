@@ -5,6 +5,7 @@ import numja.config.ThreadPoolConfig;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
 import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * ForkJoin-backed elementwise + reduce utility for {@code double[]}.
@@ -20,7 +21,29 @@ public final class ParallelOps {
     /** Leaf-chunk size inside the RecursiveAction tree. */
     static final int LEAF_CUTOFF = 16_384;
 
+    /**
+     * Test-only threshold override. When >= 0, replaces THRESHOLD in the gate check.
+     * Package-private: only same-package tests may set it. Tests MUST call
+     * {@link #resetThresholdForTesting()} in {@code @After} to avoid leaking state.
+     */
+    static volatile int testThresholdOverride = -1;
+
     private ParallelOps() {}
+
+    /** Force the threshold to {@code n} for the next calls. Tests only. */
+    static void setThresholdForTesting(int n) {
+        testThresholdOverride = n;
+    }
+
+    /** Reset the threshold override back to the default (-1 = use THRESHOLD). Tests only. */
+    static void resetThresholdForTesting() {
+        testThresholdOverride = -1;
+    }
+
+    private static int gate() {
+        int t = testThresholdOverride;
+        return t >= 0 ? t : THRESHOLD;
+    }
 
     /**
      * Elementwise binary op over two {@code double[]} arrays, writing into {@code out}.
@@ -28,7 +51,7 @@ public final class ParallelOps {
      */
     public static void elementwiseBinary(double[] a, double[] b, double[] out, DoubleBinaryOperator op) {
         final int n = a.length;
-        if (n < THRESHOLD) {
+        if (n < gate()) {
             for (int i = 0; i < n; i++) out[i] = op.applyAsDouble(a[i], b[i]);
             return;
         }
@@ -37,11 +60,39 @@ public final class ParallelOps {
     }
 
     /**
+     * Elementwise unary op over one {@code double[]} array, writing into {@code out}.
+     * Caller guarantees {@code in.length == out.length}.
+     */
+    public static void elementwiseUnary(double[] in, double[] out, DoubleUnaryOperator op) {
+        final int n = in.length;
+        if (n < gate()) {
+            for (int i = 0; i < n; i++) out[i] = op.applyAsDouble(in[i]);
+            return;
+        }
+        ForkJoinPool pool = ThreadPoolConfig.getInstance().getForkJoinPool();
+        pool.invoke(new UnaryTask(in, out, op, 0, n));
+    }
+
+    /**
+     * Elementwise binary op with a broadcast {@code scalar}, writing into {@code out}.
+     * Caller guarantees {@code a.length == out.length}.
+     */
+    public static void scalarBinary(double[] a, double scalar, double[] out, DoubleBinaryOperator op) {
+        final int n = a.length;
+        if (n < gate()) {
+            for (int i = 0; i < n; i++) out[i] = op.applyAsDouble(a[i], scalar);
+            return;
+        }
+        ForkJoinPool pool = ThreadPoolConfig.getInstance().getForkJoinPool();
+        pool.invoke(new ScalarBinaryTask(a, scalar, out, op, 0, n));
+    }
+
+    /**
      * Sum all elements of {@code data}. Deterministic left-to-right tree merge.
      */
     public static double sum(double[] data) {
         final int n = data.length;
-        if (n < THRESHOLD) {
+        if (n < gate()) {
             double s = 0.0;
             for (int i = 0; i < n; i++) s += data[i];
             return s;
@@ -57,7 +108,7 @@ public final class ParallelOps {
      */
     public static double min(double[] data) {
         final int n = data.length;
-        if (n < THRESHOLD) {
+        if (n < gate()) {
             double m = Double.MAX_VALUE;
             for (int i = 0; i < n; i++) if (data[i] < m) m = data[i];
             return m;
@@ -73,7 +124,7 @@ public final class ParallelOps {
      */
     public static double max(double[] data) {
         final int n = data.length;
-        if (n < THRESHOLD) {
+        if (n < gate()) {
             double m = -Double.MAX_VALUE;
             for (int i = 0; i < n; i++) if (data[i] > m) m = data[i];
             return m;
@@ -103,6 +154,52 @@ public final class ParallelOps {
             int mid = (lo + hi) >>> 1;
             invokeAll(new ElementwiseTask(a, b, out, op, lo, mid),
                       new ElementwiseTask(a, b, out, op, mid, hi));
+        }
+    }
+
+    private static final class UnaryTask extends RecursiveAction {
+        private static final long serialVersionUID = 1L;
+        private final double[] in, out;
+        private final DoubleUnaryOperator op;
+        private final int lo, hi;
+
+        UnaryTask(double[] in, double[] out, DoubleUnaryOperator op, int lo, int hi) {
+            this.in = in; this.out = out; this.op = op; this.lo = lo; this.hi = hi;
+        }
+
+        @Override
+        protected void compute() {
+            if (hi - lo <= LEAF_CUTOFF) {
+                for (int i = lo; i < hi; i++) out[i] = op.applyAsDouble(in[i]);
+                return;
+            }
+            int mid = (lo + hi) >>> 1;
+            invokeAll(new UnaryTask(in, out, op, lo, mid),
+                      new UnaryTask(in, out, op, mid, hi));
+        }
+    }
+
+    private static final class ScalarBinaryTask extends RecursiveAction {
+        private static final long serialVersionUID = 1L;
+        private final double[] a;
+        private final double scalar;
+        private final double[] out;
+        private final DoubleBinaryOperator op;
+        private final int lo, hi;
+
+        ScalarBinaryTask(double[] a, double scalar, double[] out, DoubleBinaryOperator op, int lo, int hi) {
+            this.a = a; this.scalar = scalar; this.out = out; this.op = op; this.lo = lo; this.hi = hi;
+        }
+
+        @Override
+        protected void compute() {
+            if (hi - lo <= LEAF_CUTOFF) {
+                for (int i = lo; i < hi; i++) out[i] = op.applyAsDouble(a[i], scalar);
+                return;
+            }
+            int mid = (lo + hi) >>> 1;
+            invokeAll(new ScalarBinaryTask(a, scalar, out, op, lo, mid),
+                      new ScalarBinaryTask(a, scalar, out, op, mid, hi));
         }
     }
 
