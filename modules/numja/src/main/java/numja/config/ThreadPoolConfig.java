@@ -2,6 +2,7 @@ package numja.config;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * Manages thread pool configuration for NumJa operations.
@@ -14,6 +15,7 @@ public class ThreadPoolConfig {
     private final int recommendedThreads;
     private int currentThreads;
     private boolean autoOptimize;
+    private volatile ForkJoinPool forkJoinPool;
     
     private ThreadPoolConfig() {
         this.systemMaxThreads = Runtime.getRuntime().availableProcessors();
@@ -73,7 +75,26 @@ public class ThreadPoolConfig {
     public int get_threads() {
         return getCurrentThreads();
     }
-    
+
+    /**
+     * Lazily-initialized singleton ForkJoinPool sized to {@link #getCurrentThreads()}.
+     * Note: {@link #setThreads(Integer)} mutates {@code currentThreads} but does NOT recreate
+     * this pool (matches existing setThreads semantics; documented limitation).
+     */
+    public ForkJoinPool getForkJoinPool() {
+        ForkJoinPool local = forkJoinPool;
+        if (local == null) {
+            synchronized (this) {
+                local = forkJoinPool;
+                if (local == null) {
+                    local = new ForkJoinPool(currentThreads);
+                    forkJoinPool = local;
+                }
+            }
+        }
+        return local;
+    }
+
     /**
      * Set the number of threads to use
      * @param numThreads Number of threads. If null or -1, use recommended.
