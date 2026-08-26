@@ -21,22 +21,22 @@ import static org.junit.Assert.assertTrue;
  *    elementwise/reduce body itself with no NDArray allocation overhead.
  *
  * What each test asserts:
- *  - largeArray_isAtLeast2xFaster: at n = 10^7 the FJP path must complete in <= 130% of the
- *    raw-loop time. Observed ratio on this i7-1255U is ~0.95-1.10 (parallel slightly faster
- *    or comparable). The user-visible Phase 2 EJML-SIMD-vs-FJP speedup (~2-4x vs Phase 1
- *    baseline) is verified by JMH in {@code 02-BASELINE-AFTER.md}. This in-process gate
- *    catches regressions where the parallel path silently degrades back to raw-loop parity
- *    or worse, while tolerating hybrid P/E-core variance.
- *  - smallArray_under10PercentRegression_at10k: at n = 10_000 both override and default
- *    take the raw-loop branch (n < THRESHOLD = 100_000). A threshold regression that drops
- *    THRESHOLD below 10_000 would force FJP at n=10k and inflate this ratio. Bound 1.50
- *    catches that.
- *  - smallArray_under10PercentRegression_at100k: at n = 100_000 == THRESHOLD the gate is
+ *  - largeArray_parallelDoesNotRegressMoreThan30Percent: at n = 10^7 the FJP path must complete
+ *    in <= 130% of the raw-loop time. Observed ratio on this i7-1255U is ~0.95-1.10 (parallel
+ *    slightly faster or comparable). The user-visible Phase 2 EJML-SIMD-vs-FJP speedup (~2-4x
+ *    vs Phase 1 baseline) is verified by JMH in {@code 02-BASELINE-AFTER.md}. This in-process
+ *    gate catches regressions where the parallel path silently degrades back to raw-loop
+ *    parity or worse, while tolerating hybrid P/E-core variance.
+ *  - smallArray_at10k_thresholdGatePreserved: at n = 10_000 both override and default take the
+ *    raw-loop branch (n < THRESHOLD = 100_000). A threshold regression that drops THRESHOLD
+ *    below 10_000 would force FJP at n=10k and inflate this ratio. Bound 1.50 catches that.
+ *  - smallArray_at100k_thresholdBoundaryStable: at n = 100_000 == THRESHOLD the gate is
  *    `n < THRESHOLD`, so default takes FJP. FJP-vs-raw overhead at this boundary on this
  *    machine is ~1.9-2.2x (ForkJoin worker spin-up is expensive for ~100us work). Bound 3.0
  *    catches catastrophic regressions only.
- *  - reduceLarge_isAtLeast2xFaster: at n = 10^7 FJP sum must complete in <= 130% of raw sum.
- *    Observed ratio ~0.55-0.75 (FJP faster). User-visible EJML-vs-FJP ratio verified by JMH.
+ *  - reduceLarge_parallelDoesNotRegressMoreThan30Percent: at n = 10^7 FJP sum must complete in
+ *    <= 130% of raw sum. Observed ratio ~0.55-0.75 (FJP faster). User-visible EJML-vs-FJP
+ *    ratio verified by JMH.
  *
  * Seeds (47L, 48L) match {@code CoreBench.SmallArrayState} for apples-to-apples timing
  * comparison with the JMH baseline.
@@ -86,7 +86,7 @@ public class ParallelRegressionTest {
     }
 
     @Test
-    public void largeArray_isAtLeast2xFaster() {
+    public void largeArray_parallelDoesNotRegressMoreThan30Percent() {
         final int n = 10_000_000;
         double[] a = randomArray(n, 47L);
         double[] b = randomArray(n, 48L);
@@ -114,7 +114,7 @@ public class ParallelRegressionTest {
     }
 
     @Test
-    public void smallArray_under10PercentRegression_at10k() {
+    public void smallArray_at10k_thresholdGatePreserved() {
         final int n = 10_000;
         double[] a = randomArray(n, 47L);
         double[] b = randomArray(n, 48L);
@@ -140,7 +140,7 @@ public class ParallelRegressionTest {
     }
 
     @Test
-    public void smallArray_under10PercentRegression_at100k() {
+    public void smallArray_at100k_thresholdBoundaryStable() {
         final int n = 100_000;
         double[] a = randomArray(n, 47L);
         double[] b = randomArray(n, 48L);
@@ -166,7 +166,7 @@ public class ParallelRegressionTest {
     }
 
     @Test
-    public void reduceLarge_isAtLeast2xFaster() {
+    public void reduceLarge_parallelDoesNotRegressMoreThan30Percent() {
         final int n = 10_000_000;
         double[] a = randomArray(n, 47L);
 
