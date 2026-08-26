@@ -93,9 +93,32 @@ public class ParallelReduceTest {
     }
 
     @Test
-    public void sum_forcedSequential_matchesParallel() {
-        ParallelOps.setThresholdForTesting(Integer.MAX_VALUE);
+    public void sum_aboveThreshold_matchesForcedSequential() {
+        // Cross-path equivalence: force sequential branch on the SAME input data,
+        // then re-run with default threshold (parallel branch) and assert they agree
+        // within IEEE rounding. Tree-reduce (`left.total + right.total`) differs from
+        // left-to-right summation by O(log n) rounding steps, so absolute delta may be
+        // ~1e-8 at magnitude ~5e5; relErr stays within 1e-13 (matches
+        // sum_matchesSequential_aboveThreshold above).
         double[] data = randomVec(1_000_000, 60L).toDoubleArray();
+
+        // Forced sequential via test threshold override.
+        ParallelOps.setThresholdForTesting(Integer.MAX_VALUE);
+        double sequential = ParallelOps.sum(data);
+
+        // Default threshold = 100_000 -> n=1_000_000 takes the parallel branch.
+        ParallelOps.resetThresholdForTesting();
+        double parallel = ParallelOps.sum(data);
+
+        assertTrue("parallel sum relErr vs forced-sequential too large: "
+                + relErr(parallel, sequential), relErr(parallel, sequential) <= 1e-13);
+    }
+
+    @Test
+    public void sum_isDeterministic_sequentialPath() {
+        // Sanity gate: forced-sequential path must be deterministic across calls.
+        ParallelOps.setThresholdForTesting(Integer.MAX_VALUE);
+        double[] data = randomVec(1_000_000, 61L).toDoubleArray();
         double first = ParallelOps.sum(data);
         double second = ParallelOps.sum(data);
         assertEquals(first, second, 0.0);
