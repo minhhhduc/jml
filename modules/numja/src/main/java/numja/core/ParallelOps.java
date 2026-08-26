@@ -237,12 +237,16 @@ public final class ParallelOps {
 
         MinTask(double[] data, int lo, int hi) {
             this.data = data; this.lo = lo; this.hi = hi;
+            // Explicit identity init — Java default 0.0 is wrong for min over
+            // all-positive data. Defends WR-05 invariant: best is always the
+            // correct identity before compute() overwrites it.
+            this.best = Double.MAX_VALUE;
         }
 
         @Override
         protected void compute() {
             if (hi - lo <= LEAF_CUTOFF) {
-                double m = Double.MAX_VALUE;
+                double m = best;
                 for (int i = lo; i < hi; i++) if (data[i] < m) m = data[i];
                 this.best = m;
                 return;
@@ -263,12 +267,16 @@ public final class ParallelOps {
 
         MaxTask(double[] data, int lo, int hi) {
             this.data = data; this.lo = lo; this.hi = hi;
+            // Explicit identity init — Java default 0.0 is wrong for max over
+            // all-negative data. Defends WR-05 invariant: best is always the
+            // correct identity before compute() overwrites it.
+            this.best = -Double.MAX_VALUE;
         }
 
         @Override
         protected void compute() {
             if (hi - lo <= LEAF_CUTOFF) {
-                double m = -Double.MAX_VALUE;
+                double m = best;
                 for (int i = lo; i < hi; i++) if (data[i] > m) m = data[i];
                 this.best = m;
                 return;
