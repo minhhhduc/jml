@@ -4,7 +4,7 @@
 
 ## Phases
 
-### Phase 1: Restore Dev Environment & Baseline Benchmark
+### Phase 1: Restore Dev Environment & Baseline Benchmark ✅ DONE (2026-08-26, verified GO)
 **Goal:** Source từ nhánh dev chạy được, có benchmark harness đo baseline mọi core op — con số trước khi tối ưu.
 **Mode:** mvp
 **Success Criteria**:
@@ -14,6 +14,7 @@
 4. TornadoVM/Vector API version check hoàn tất (verify các gap trong research/SUMMARY.md)
 
 Requirements: BENCH-01, BENCH-02 (+ verify research gaps)
+Deliverables: BASELINE.md (12 ops), bench/ module, golden-value harness (4 ops vs NumPy, tất cả PASS trong tolerance), VERSIONS.md (3 gaps closed). Xem VERIFICATION.md.
 
 ### Phase 2: CPU Parallel Core (Threads)
 **Goal:** Elementwise ops và reduce của NDArray chạy đa luồng qua ParallelUtils mở rộng, speedup đo được trên multi-core, không regress ở mảng nhỏ.

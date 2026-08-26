@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-08-25)
 ## Current Position
 
 - **Milestone:** v0.3.0 Performance & Scalability (first)
-- **Phase:** 1 of 6 — **tất cả 3 plans executed** (01-01: `59e10f4`+`d5e1280`, 01-02: `96616a5`, 01-03: `c040ae7`) — chờ verify + close phase
+- **Phase:** 1 of 6 — **✅ CLOSED (verified GO 2026-08-26)** — plans 01-01..01-03 + review fixes (`59343b8`) + VERIFICATION.md
 - **Branch:** `dev`
-- **Next command:** `/gsd-verify-work` (hoặc `/gsd-validate-phase`) để close Phase 1
+- **Next command:** `/gsd-plan-phase 2`
 
 ## Key Context for Future Sessions
 
@@ -20,7 +20,8 @@ See: .planning/PROJECT.md (updated 2026-08-25)
 - Codebase map: `.planning/codebase/` (7 docs)
 - Research summary: `.planning/research/SUMMARY.md` + **VERIFIED VERSIONS tại `.planning/phases/01-baseline-benchmark/VERSIONS.md`**
 - Baseline numbers: `.planning/phases/01-baseline-benchmark/BASELINE.md` — matmul 1024²~1s/op, elementwise 10⁷ ~40ms, reduce ~11ms
-- Accuracy gaps: sum/mean lệch NumPy 1e-14 (sequential vs pairwise) — fix bằng tree/Kahan ở Phase 3; matmul + softmax + linreg trong tolerance
+- Accuracy gaps: **không còn gap blocking** — golden tests all PASS sau review fixes: matmul 2.0e-15, sum/mean 1.2e-14 (tol 1e-13), softmax ref-only 4.3e-16, linreg ≤3.2e-13. Kahan/tree-reduce vẫn là candidate cải thiện ở Phase 3
+- Code review: REVIEW.md — 12 findings (3C/5M/4m), tất cả fixed trong `59343b8`
 - Build: Maven 3.9.15 tại `C:\Users\Admin\.maven\maven-3.9.15\bin` (**không trên PATH** — prefix `$env:Path = '...\bin;' + $env:Path`)
 - Benchmarks: `mvn -pl bench -am package -DskipTests` rồi `java -jar bench/target/benchmarks.jar` từ repo root
 - Golden tests: `mvn -pl modules/sklearn -am test "-Dtest=GoldenReferenceTest" "-Dsurefire.failIfNoSpecifiedTests=false"`
