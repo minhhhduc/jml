@@ -6,6 +6,8 @@ import numja.core.ParallelOps;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.function.DoubleUnaryOperator;
+
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -135,5 +137,84 @@ public class ParallelElementwiseTest {
             assertTrue("scalarAdd[" + idx + "] delta " + Math.abs(ac[idx] - e[idx]),
                     Math.abs(ac[idx] - e[idx]) == 0.0);
         }
+    }
+
+    @Test
+    public void subtract_aboveThreshold_matchesSequential() {
+        NDArray a = randomVec(N, 50L);
+        NDArray b = randomVec(N, 51L);
+
+        ParallelOps.setThresholdForTesting(Integer.MAX_VALUE);
+        NDArray expected = NumJa.subtract(a, b);
+
+        ParallelOps.resetThresholdForTesting();
+        NDArray actual = NumJa.subtract(a, b);
+
+        double[] e = expected.toDoubleArray();
+        double[] ac = actual.toDoubleArray();
+        for (int idx : new int[]{0, N / 2, N - 1}) {
+            assertTrue("subtract[" + idx + "] relErr " + relErr(ac[idx], e[idx]),
+                    relErr(ac[idx], e[idx]) <= 1e-13);
+        }
+    }
+
+    @Test
+    public void divide_aboveThreshold_matchesSequential() {
+        NDArray a = randomVec(N, 50L);
+        // Use rng.nextDouble() + 1.0 to keep divisor strictly >= 1.0 (avoid div-by-zero).
+        java.util.Random rng = new java.util.Random(51L);
+        double[] bData = new double[N];
+        for (int i = 0; i < N; i++) bData[i] = rng.nextDouble() + 1.0;
+        NDArray b = new NDArray(bData);
+
+        ParallelOps.setThresholdForTesting(Integer.MAX_VALUE);
+        NDArray expected = NumJa.divide(a, b);
+
+        ParallelOps.resetThresholdForTesting();
+        NDArray actual = NumJa.divide(a, b);
+
+        double[] e = expected.toDoubleArray();
+        double[] ac = actual.toDoubleArray();
+        for (int idx : new int[]{0, N / 2, N - 1}) {
+            assertTrue("divide[" + idx + "] relErr " + relErr(ac[idx], e[idx]),
+                    relErr(ac[idx], e[idx]) <= 1e-13);
+        }
+    }
+
+    @Test
+    public void unary_aboveThreshold_matchesSequential_parameterized() {
+        // Math is exact to 1 ulp for sqrt/log/sin/cos/abs; tan near pi/2 has higher rounding
+        // error, so it gets a relaxed abs bound of 1e-10.
+        DoubleUnaryOperator[] ops = {
+                Math::sqrt, Math::log, Math::sin, Math::cos, Math::tan, Math::abs
+        };
+        double[] tanBounds = {1e-12, 1e-12, 1e-12, 1e-12, 1e-10, 1e-12};
+        String[] names = {"sqrt", "log", "sin", "cos", "tan", "abs"};
+
+        for (int k = 0; k < ops.length; k++) {
+            DoubleUnaryOperator op = ops[k];
+            NDArray a = randomVec(N, 50L + k);
+
+            // Reference: forced sequential via direct NDArray method routing through ParallelOps.
+            ParallelOps.setThresholdForTesting(Integer.MAX_VALUE);
+            double[] expected = applyUnary(a, op);
+
+            ParallelOps.resetThresholdForTesting();
+            double[] actual = applyUnary(a, op);
+
+            for (int idx : new int[]{0, N / 2, N - 1}) {
+                double absDelta = Math.abs(actual[idx] - expected[idx]);
+                assertTrue(names[k] + "[" + idx + "] abs delta " + absDelta
+                                + " exceeds bound " + tanBounds[k],
+                        absDelta <= tanBounds[k]);
+            }
+        }
+    }
+
+    private static double[] applyUnary(NDArray a, DoubleUnaryOperator op) {
+        double[] src = a.toDoubleArray();
+        double[] out = new double[src.length];
+        ParallelOps.elementwiseUnary(src, out, op);
+        return out;
     }
 }
