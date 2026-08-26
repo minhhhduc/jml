@@ -86,6 +86,26 @@ public class CoreBench {
         bh.consume(NumJa.multiply(s.a, s.b));
     }
 
+    @State(Scope.Thread)
+    public static class SmallArrayState {
+        @Param({"10000", "100000"})
+        public int n;
+
+        NDArray a;
+        NDArray b;
+
+        @Setup(Level.Trial)
+        public void setUp() {
+            a = randomVec(n, 47L);
+            b = randomVec(n, 48L);
+        }
+    }
+
+    @Benchmark
+    public void add_elementwise_small(SmallArrayState s, Blackhole bh) {
+        bh.consume(NumJa.add(s.a, s.b));
+    }
+
     // ---------------- reduce ----------------
 
     @State(Scope.Thread)
