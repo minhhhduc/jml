@@ -5,8 +5,15 @@ Usage:
     .venv/Scripts/python.exe scripts/golden/generate_golden.py
 
 Writes JSON files to bench/src/test/resources/golden/. Each file contains the
-op name, a fixed input seed, expected outputs, and a relative tolerance.
-Regenerate any time NumPy version changes — see GOLDEN.md.
+op name, an input SEED, expected outputs, and a relative tolerance.
+
+Inputs are NOT stored in the JSON: they are regenerated deterministically on
+the Java side from the seed via java.util.Random. This script reimplements
+Java's Random LCG exactly (48-bit, documented in the JDK Javadoc) so both
+languages produce bit-identical inputs. Keeps golden files tiny instead of
+tens of MB of raw doubles in git.
+
+Regenerate any time NumPy version changes — see bench/GOLDEN.md.
 """
 import json
 import os
@@ -14,66 +21,99 @@ import os
 import numpy as np
 from sklearn.linear_model import LinearRegression as SkLinearRegression
 
-OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "bench", "src", "test", "resources", "golden")
-SEED = 42
+OUT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "bench", "src", "test", "resources", "golden"))
+
+# --- java.util.Random compatible LCG (see JDK Javadoc for java.util.Random) ---
+MASK = (1 << 48) - 1
+MULT = 0x5DEECE66D
+ADD = 0xB
+
+
+class JavaRandom:
+    def __init__(self, seed):
+        self.seed = (seed ^ MULT) & MASK
+
+    def next(self, bits):
+        self.seed = (self.seed * MULT + ADD) & MASK
+        return self.seed >> (48 - bits)
+
+    def next_double(self):
+        a = self.next(26)
+        b = self.next(27)
+        return ((a << 27) | b) * (2.0 ** -53)
+
+
+def rand_doubles(rng, n):
+    return np.array([rng.next_double() for _ in range(n)])
 
 
 def write(name, payload):
     path = os.path.join(OUT_DIR, f"{name}.json")
     with open(path, "w") as f:
-        json.dump(payload, f, indent=2)
-    print(f"wrote {path}")
+        json.dump(payload, f, separators=(",", ":"))
+    print(f"wrote {os.path.getsize(path):>9,} bytes  {path}")
 
 
 def matmul_256():
-    rng = np.random.default_rng(SEED)
-    a = rng.random((256, 256))
-    b = rng.random((256, 256))
+    """Inputs: two [256][256] row-major matrices from java Random(seed)."""
+    seed = 42
+    rng = JavaRandom(seed)
+    n = 256
+    a = rand_doubles(rng, n * n).reshape(n, n)
+    b = rand_doubles(rng, n * n).reshape(n, n)
     expected = (a @ b).flatten().tolist()
     write("matmul_256", {
         "op": "matmul",
-        "seed": SEED,
-        "shape": [256, 256],
-        "inputs": {"a": a.flatten().tolist(), "b": b.flatten().tolist()},
+        "seed": seed,
+        "input_gen": "row-major [256][256] matrix 'a', then 'b', each via java.util.Random.nextDouble()",
+        "shape": [n, n],
         "expected": expected,
+        # EJML blocked matmul vs NumPy BLAS: different accumulation order -> rel 1e-12
         "tolerance_rel": 1e-12,
     })
 
 
-def sum_mean_1e6():
-    rng = np.random.default_rng(SEED + 1)
-    data = rng.random(1_000_000) * 2.0 - 1.0
-    write("sum_mean_1e6", {
+def sum_mean():
+    """Inputs: double[n] uniform in [-1, 1] via (rng.nextDouble()*2-1)."""
+    seed = 43
+    n = 1_000_000
+    rng = JavaRandom(seed)
+    data = rand_doubles(rng, n) * 2.0 - 1.0
+    write("sum_mean", {
         "op": "sum_mean",
-        "seed": SEED + 1,
-        "inputs": {"data": data.tolist()},
+        "seed": seed,
+        "input_gen": "double[1000000]: java.util.Random.nextDouble()*2-1 per element",
         "expected": {
             "sum": float(np.sum(data)),
             "mean": float(np.mean(data)),
         },
-        # sequential double summation drifts vs pairwise numpy sum: rel 1e-15
-        "tolerance_rel": 1e-15,
+        # Sequential double summation (NDArray.sum) vs pairwise NumPy sum drifts
+        # ~1e-14 at n=1e6 — tolerance must sit above that unavoidable drift.
+        "tolerance_rel": 1e-13,
     })
 
 
-def softmax_1000_extreme():
-    """Softmax over vector[1000] with values in [-700, 700] — boundary regime."""
-    rng = np.random.default_rng(SEED + 2)
-    x = rng.uniform(-700.0, 700.0, size=1000)
-    shifted = x - np.max(x)          # stable max-shift trick (NumJa must do the same)
+def softmax_extreme():
+    """Inputs: double[1000] uniform in [-700, 700] via (rng.nextDouble()*1400-700)."""
+    seed = 44
+    n = 1000
+    rng = JavaRandom(seed)
+    x = rand_doubles(rng, n) * 1400.0 - 700.0
+    shifted = x - np.max(x)  # stable max-shift (both sides must do this)
     e = np.exp(shifted)
     expected = (e / e.sum()).tolist()
-    write("softmax_1000_extreme", {
+    write("softmax_extreme", {
         "op": "softmax",
-        "seed": SEED + 2,
-        "inputs": {"x": x.tolist()},
+        "seed": seed,
+        "input_gen": "double[1000]: java.util.Random.nextDouble()*1400-700 per element",
         "expected": expected,
+        # max-shift exp accumulation: rel 1e-12
         "tolerance_rel": 1e-12,
     })
 
 
 def linear_regression_iris():
-    """Fit on iris features -> predict petal_width from the other 3 columns."""
+    """Fit iris features -> predict petal_width from the other 3 columns."""
     raw = np.genfromtxt(
         os.path.join(os.path.dirname(__file__), "..", "..", "dist", "datasets", "iris.csv"),
         delimiter=",", skip_header=1, usecols=(0, 1, 2, 3),
@@ -85,13 +125,13 @@ def linear_regression_iris():
     write("linear_regression_iris", {
         "op": "linear_regression",
         "seed": None,
-        "inputs": {"X": X.tolist(), "y": y.tolist()},
+        "input_source": "dist/datasets/iris.csv cols 0-2 = X, col 3 = y",
         "expected": {
             "coefficients": model.coef_.tolist(),
             "intercept": float(model.intercept_),
             "predictions": preds,
         },
-        # closed-form lstsq vs sklearn's solver: rel 1e-9 is generous but tight enough
+        # Normal equation + Gaussian elimination vs sklearn lstsq solver: rel 1e-9
         "tolerance_rel": 1e-9,
     })
 
@@ -99,7 +139,7 @@ def linear_regression_iris():
 if __name__ == "__main__":
     os.makedirs(OUT_DIR, exist_ok=True)
     matmul_256()
-    sum_mean_1e6()
-    softmax_1000_extreme()
+    sum_mean()
+    softmax_extreme()
     linear_regression_iris()
     print("done.")
