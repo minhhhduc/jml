@@ -3,7 +3,13 @@ package pandas;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+
+import pandas.internal.ChunkedReadOptions;
+import pandas.internal.CsvChunkReader;
 
 public class Pandas {
 
@@ -109,6 +115,37 @@ public class Pandas {
         }
 
         return new DataFrame(seriesMap);
+    }
+
+    /**
+     * Streaming variant of {@link #read_csv(String)}: yields one
+     * {@link DataFrame} chunk at a time via an {@link Iterator}. The caller
+     * MUST close the iterator (it implements {@link AutoCloseable}) via
+     * try-with-resources to release the underlying file handle.
+     *
+     * <p>Trust boundary: filesystem (caller-controlled path) → in-process
+     * {@code Iterator<DataFrame>}. STRIDE threats:
+     * <ul>
+     *   <li>T401 path traversal — mitigated by {@code path.normalize()} BEFORE
+     *       {@code Files.isReadable(p)} check</li>
+     *   <li>T403 file handle leak — transferred to caller (javadoc contract);
+     *       {@link CsvChunkReader} implements {@link AutoCloseable</li>
+     *   <li>T405 OOM — mitigated by {@link ChunkedReadOptions#validate()}
+     *       ceiling on {@code chunkRows</li>
+     *</ul>
+     *
+     * @param filepath CSV file path (will be normalized before open)
+     * @param options chunked read options; {@code null} → defaults
+     * @return closeable iterator of DataFrame chunks
+     * @throws IOException if the file cannot be opened
+     * @throws IllegalArgumentException if path is not readable
+     * @since ASVS-L1
+     */
+    public static Iterator<DataFrame> read_csv_streaming(String filepath, ChunkedReadOptions options) throws IOException {
+        Path p = Paths.get(filepath).normalize();
+        if (!Files.isReadable(p)) throw new IllegalArgumentException("Cannot read path: " + filepath);
+        if (options == null) options = new ChunkedReadOptions();
+        return new CsvChunkReader(p, options);
     }
 
     // ===== CUT - Bin continuous values into discrete intervals =====
