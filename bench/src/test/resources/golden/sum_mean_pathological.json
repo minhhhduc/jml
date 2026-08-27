@@ -1,0 +1,1 @@
+{"op":"sum_mean","magnitude_class":"extreme_cancellation","seed":45,"input_gen":"double[1000000]: alternating [1e15, 1e-15] starting at 1e15","expected":{"sum":5e20,"mean":5e14},"tolerance_rel":1e-13}

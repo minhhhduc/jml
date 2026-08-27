@@ -1,0 +1,1 @@
+{"op":"softmax_extreme_logits","seed":46,"input_gen":"double[1000]: java.util.Random.nextDouble()*2e300-1e300 per element","magnitude_class":"extreme_overflow","tolerance_rel":1e-13}
