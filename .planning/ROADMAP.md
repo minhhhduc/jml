@@ -82,6 +82,19 @@ Requirements: ACC-01, ACC-02, ACC-03, BENCH-03
 
 Requirements: MEM-01, MEM-02, MEM-03, USE-02
 
+**Plan structure** (planned 2026-08-28, 4 plans / 4 waves — plan-checker 0 blockers / 4 warnings fixed):
+- Wave 1 — `04-01-PLAN.md` *(no deps)*: ChunkedReadOptions + CsvChunkReader (Iterator<DataFrame> + AutoCloseable, ASVS L1 + STRIDE-T401/T403/T405/T406)
+- Wave 2 — `04-02-PLAN.md` *(depends on Wave 1)*: TDD core — RunningGroupAggregator (sum/mean/count/min/max/std cross-path equivalence to GroupBy, WR-05 defensive init) + additive `Pandas.read_csv_streaming` sibling method (existing 2 methods byte-identical)
+- Wave 3 — `04-03-PLAN.md` *(depends on Wave 1+2)*: TDD core — `GaussianNB.partial_fit` + `finalize` (lazy init accumulator extraction; `fit` signature byte-identical) + `PandasPipeline` fluent builder (USE-02 4-line caller pattern)
+- Wave 4 — `04-04-PLAN.md` *(depends on all)*: Verify + BENCH-03 carry-forward — `bench/PandasBench` streaming variant + `04-baseline.json` (extends 03-baseline.json with 2 streaming benchmarks at 50% tolerance) + `04-BASELINE-AFTER.md` + `04-VERIFICATION.md`
+
+**Cross-cutting constraints:**
+- ASVS L1 + STRIDE register (every PLAN.md `<threat_model>` block carries `security_enforcement: true` + `asvs_level: 1` + `disposition_policy: block on high`) — applies to all 4 plans
+- Public API frozen (v0.2.0): NumJa.java=61 + ArrayOps.java=34 UNCHANGED; Pandas.java +1 sibling method (additive); GaussianNB.java +2 sibling methods (additive)
+- Stdlib-only (no new Maven deps): `Files.newBufferedReader(path, UTF_8)` + `Iterator<DataFrame>` + `AutoCloseable`
+- JUnit 4 (NOT 5); `--release 17`; POM unchanged
+- Regression tolerance: 50% (carries Phase 3's documented override, NOT 15%)
+
 ### Phase 5: Hardware Abstraction Layer & GPU POC
 **Goal:** ComputeBackend interface với CPU backend mặc định; POC GPU qua 1 op chứng minh kiến trúc mở rộng được sang GPU/TPU.
 **Mode:** mvp
