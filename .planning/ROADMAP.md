@@ -71,7 +71,7 @@ Requirements: ACC-01, ACC-02, ACC-03, BENCH-03
 - Public API surface unchanged: NumJa.java = 61 public static, ArrayOps.java = 34 public static
 - Tests: 55 total (was 35 after Phase 2; +15 from Phase 3 = +8 ParallelCompensationTest + +7 AccuracyHardeningTest), 0 failures, 1 pre-existing @Ignore.
 
-### Phase 4: Adaptive Memory Model
+### Phase 4: Adaptive Memory Model ✅ DONE (2026-08-28, verified GO)
 **Goal:** Dataset vượt RAM xử lý tự động theo chunk/out-of-core — caller không sửa code.
 **Mode:** mvp
 **Success Criteria**:
@@ -80,13 +80,25 @@ Requirements: ACC-01, ACC-02, ACC-03, BENCH-03
 3. API in-memory hiện tại hành vi không đổi với dataset nhỏ
 4. USE-02: pipeline helper dựng load→chunk→transform→fit dưới 10 dòng
 
-Requirements: MEM-01, MEM-02, MEM-03, USE-02
+Requirements: MEM-01, MEM-02, MEM-03, USE-02, BENCH-03
 
-**Plan structure** (planned 2026-08-28, 4 plans / 4 waves — plan-checker 0 blockers / 4 warnings fixed):
-- Wave 1 — `04-01-PLAN.md` *(no deps)*: ChunkedReadOptions + CsvChunkReader (Iterator<DataFrame> + AutoCloseable, ASVS L1 + STRIDE-T401/T403/T405/T406)
-- Wave 2 — `04-02-PLAN.md` *(depends on Wave 1)* ✅ COMPLETE 2026-08-28 — TDD core — RunningGroupAggregator (sum/mean/count/min/max/std cross-path equivalence to GroupBy, WR-05 defensive init) + additive `Pandas.read_csv_streaming` sibling method (existing 2 methods byte-identical). Commits `6a98e94` (test) + `2cc5f23` (feat).
-- Wave 3 — `04-03-PLAN.md` *(depends on Wave 1+2)* ✅ COMPLETE 2026-08-28 — TDD core — `GaussianNB.partial_fit` + `finalize_fit` (Chan's parallel M2, cross-path equivalent to one-shot fit, `fit` signature byte-identical) + `PandasPipeline` fluent builder (USE-02 4-line caller pattern, try-with-resources). Commits `114c448` (test) + `0a21bbf` (feat). 9 NEW tests (5 partial_fit + 4 pipeline), full sklearn suite 22 tests, 0 failures.
-- Wave 4 — `04-04-PLAN.md` *(depends on all)*: Verify + BENCH-03 carry-forward — `bench/PandasBench` streaming variant + `04-baseline.json` (extends 03-baseline.json with 2 streaming benchmarks at 50% tolerance) + `04-BASELINE-AFTER.md` + `04-VERIFICATION.md`
+**Plan structure** (planned 2026-08-28, 4 plans / 4 waves — all executed):
+- Wave 1 — `04-01-PLAN.md` ✅ — ChunkedReadOptions + CsvChunkReader (Iterator<DataFrame> + AutoCloseable, ASVS L1 + STRIDE-T401/T403/T405/T406). 13 NEW tests.
+- Wave 2 — `04-02-PLAN.md` ✅ — TDD core — RunningGroupAggregator (sum/mean/count/min/max/std cross-path equivalence to GroupBy, WR-05 defensive init) + additive `Pandas.read_csv_streaming` sibling method (existing 2 methods byte-identical). Commits `6a98e94` (test) + `2cc5f23` (feat). 13 NEW tests (8 + 5).
+- Wave 3 — `04-03-PLAN.md` ✅ — TDD core — `GaussianNB.partial_fit` + `finalize_fit` (Chan's parallel M2, cross-path equivalent to one-shot fit, `fit` signature byte-identical) + `PandasPipeline` fluent builder (USE-02 4-line caller pattern, try-with-resources). Commits `114c448` (test) + `0a21bbf` (feat). 9 NEW tests (5 partial_fit + 4 pipeline).
+- Wave 4 — `04-04-PLAN.md` ✅ — Verify + BENCH-03 carry-forward — `bench/PandasBench` 2 streaming JMH benchmarks + `04-baseline.json` (extends 03-baseline.json with 2 streaming benchmarks at 50% tolerance) + `04-BASELINE-AFTER.md` + `04-VERIFICATION.md` (22/22 must-haves PASS). Commits `f9d216a` + `3db7f36` + `cc9d5d2`.
+
+**Results** (see `04-BASELINE-AFTER.md` for full JMH data + `04-VERIFICATION.md` for must-have coverage 22/22):
+- `Pandas.read_csv_streaming(path, ChunkedReadOptions)` returns `Iterator<DataFrame>`; try-with-resources releases handle on close.
+- `RunningGroupAggregator.sum/mean/count/min/max/std` results match in-memory `GroupBy` within 1e-9; NaN cells skipped (T406 mitigation).
+- `GaussianNB.partial_fit(NDArray, int[])` + `finalize_fit()` — Chan's parallel M2 on running sum + M2 (`M2_combined = M2_a + M2_b + delta^2 * n_a * n_b / (n_a + n_b)`); bit-equivalent to one-shot `fit` on n=1000 (Arrays.equals predictions). Existing `fit(NDArray, int[])` signature byte-identical.
+- `PandasPipeline` fluent builder: `.load(path).partialFit(estimator, labelColumn).finalizeFit().run()` — 4-line caller pattern closes USE-02.
+- 2 new JMH streaming benchmarks: `read_csv_streaming_california` = 61.291ms (chunkRows=10k), `streaming_groupby_sum_titanic` = 26.300ms. Both PASS at 50% tolerance.
+- BENCH-03 regression gate extended: `scripts/check_regression.ps1` reads `04-baseline.json` (10 perf + 3 accuracy); CSV parser now reads any `Param:*` column; class-name stripping covers CoreBench/PandasBench/SklearnBench. Self-consistent (exit 0 against fresh baseline), idempotent.
+- Public API surface: NumJa.java = 61 (frozen), ArrayOps.java = 34 (frozen), Pandas.java = 11 (+1: read_csv_streaming), GaussianNB.java = 9 lines containing public (1 class + 1 ctor + 7 instance methods, +2 instance: partial_fit, finalize_fit). All additive.
+- Tests: 90 total (was 55 after Phase 3; +35 from Phase 4 = +6 ChunkedReadOptionsTest + +7 CsvChunkReaderTest + +8 RunningGroupAggregatorTest + +5 PandasStreamingTest + +5 GaussianNBPartialFitTest + +4 PandasPipelineTest), 0 failures, 1 pre-existing @Ignore.
+- Tolerance override: 50% (Phase 3 carry-forward) in `04-baseline.json`; rationale in `_meta.tolerance_rationale`.
+- Code review: no new critical/warning findings; deviations all Rule 3 (blocking) on gate script extensions (CSV parser + class-name stripping + safe property lookup + off-by-one fix + stale Phase 3 numbers re-measured).
 
 **Cross-cutting constraints:**
 - ASVS L1 + STRIDE register (every PLAN.md `<threat_model>` block carries `security_enforcement: true` + `asvs_level: 1` + `disposition_policy: block on high`) — applies to all 4 plans
