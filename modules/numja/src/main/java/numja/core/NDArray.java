@@ -453,14 +453,19 @@ public class NDArray {
     }
 
     /**
-     * Product of all elements
+     * Product of all elements. Sub-threshold: sequential loop (bit-identical to v0.2.0).
+     * Above {@link ParallelOps#THRESHOLD}: log-sum-exp compensated via {@link ParallelOps#prod}.
      */
     public double prod() {
-        double product = 1.0;
-        for (int i = 0; i < data.numRows * data.numCols; i++) {
-            product *= data.data[i];
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            double product = 1.0;
+            for (int i = 0; i < n; i++) {
+                product *= data.data[i];
+            }
+            return product;
         }
-        return product;
+        return ParallelOps.prod(data.data);
     }
     
     /**
