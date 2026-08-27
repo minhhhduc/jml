@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v0.3.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-08-28T04:30:00.000Z"
+last_updated: "2026-08-28T04:45:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 15
-  completed_plans: 13
-  percent: 53
+  completed_plans: 14
+  percent: 60
 ---
 
 # STATE: NumJa Performance & Scalability
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-08-25)
 - **Phase:** 1 of 6 — **✅ CLOSED (verified GO 2026-08-26)** — plans 01-01..01-03 + review fixes (`59343b8`) + VERIFICATION.md
 - **Phase 2:** **✅ CLOSED (verified GO 2026-08-27)** — plans 02-01..02-04 + code-review fixes (5 WRs in `28e7352..1d05d30`) + VERIFICATION.md + 02-BASELINE-AFTER.md. CPU-01 (add 10^7 = 2.43x, multiply 10^7 = 1.42x FLAGGED) + CPU-02 (sum 10^7 = 2.63x, mean 10^7 = 5.45x) PASS; GoldenReferenceTest sum/mean err ~2.6e-15. CPU-03 deferred.
 - **Phase 3:** **✅ CLOSED (verified GO 2026-08-28)** — plans 03-01..03-04 all executed (NumericStable + Kahan/log-sum-exp + AccuracyHardeningTest + BENCH-03 gate). Commits: `7e82b14`, `37975ac`, `ebd0a86`, `4144ee6`, `6ea1afe`, `065f219`, `3e209b3`, `ca0306a`, `2d026a7`, `0c97953`, `844d254`. All 4 requirements (ACC-01/02/03 + BENCH-03) verified. `mvn test` 55 tests green, 0 failures, 1 @Ignore. Public API frozen (61/34). 1 tolerance override: 15% → 50% in `03-baseline.json` (hybrid P/E noise floor exceeds original D-12 threshold; documented in `_meta.tolerance_rationale`). Regression gate `scripts/check_regression.ps1` self-consistent.
-- **Phase 4:** Adaptive Memory Model — **Wave 1 + Wave 2 COMPLETE** (plans 04-01 + 04-02). Wave 2 commits: test(04-02) `6a98e94`, feat(04-02) `2cc5f23`. 13 NEW tests, 27 tests total in pandas module, 0 failures. `Pandas.read_csv_streaming` exposed at public API (+1 method, count 10->11). `RunningGroupAggregator` proven equivalent to in-memory `GroupBy` within `1e-9` for sum/mean/count/min/max/std with NaN-skip and 2-chunk associativity. Stdlib-only. Public API additive only on Pandas.java.
+- **Phase 4:** Adaptive Memory Model — **Wave 1 + Wave 2 + Wave 3 COMPLETE** (plans 04-01 + 04-02 + 04-03). Wave 2 commits: test(04-02) `6a98e94`, feat(04-02) `2cc5f23`. Wave 3 commits: test(04-03) `114c448`, feat(04-03) `0a21bbf`. 9 NEW tests for partial_fit + PandasPipeline (5+4); full sklearn suite 22 tests, 0 failures, 1 pre-existing @Ignore. `GaussianNB.partial_fit + finalize_fit` exposed at public API (+2 methods, count 5->7). Cross-path equivalence to one-shot fit verified by Arrays.equals predictions on n=1000 + score within 1e-9. `PandasPipeline` fluent builder closes USE-02 (4-line caller pattern, try-with-resources). Stdlib-only. Existing `fit(NDArray, int[])` signature byte-identical.
 - **Branch:** `dev`
 
 ## Key Context for Future Sessions

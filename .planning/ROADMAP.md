@@ -85,7 +85,7 @@ Requirements: MEM-01, MEM-02, MEM-03, USE-02
 **Plan structure** (planned 2026-08-28, 4 plans / 4 waves — plan-checker 0 blockers / 4 warnings fixed):
 - Wave 1 — `04-01-PLAN.md` *(no deps)*: ChunkedReadOptions + CsvChunkReader (Iterator<DataFrame> + AutoCloseable, ASVS L1 + STRIDE-T401/T403/T405/T406)
 - Wave 2 — `04-02-PLAN.md` *(depends on Wave 1)* ✅ COMPLETE 2026-08-28 — TDD core — RunningGroupAggregator (sum/mean/count/min/max/std cross-path equivalence to GroupBy, WR-05 defensive init) + additive `Pandas.read_csv_streaming` sibling method (existing 2 methods byte-identical). Commits `6a98e94` (test) + `2cc5f23` (feat).
-- Wave 3 — `04-03-PLAN.md` *(depends on Wave 1+2)*: TDD core — `GaussianNB.partial_fit` + `finalize` (lazy init accumulator extraction; `fit` signature byte-identical) + `PandasPipeline` fluent builder (USE-02 4-line caller pattern)
+- Wave 3 — `04-03-PLAN.md` *(depends on Wave 1+2)* ✅ COMPLETE 2026-08-28 — TDD core — `GaussianNB.partial_fit` + `finalize_fit` (Chan's parallel M2, cross-path equivalent to one-shot fit, `fit` signature byte-identical) + `PandasPipeline` fluent builder (USE-02 4-line caller pattern, try-with-resources). Commits `114c448` (test) + `0a21bbf` (feat). 9 NEW tests (5 partial_fit + 4 pipeline), full sklearn suite 22 tests, 0 failures.
 - Wave 4 — `04-04-PLAN.md` *(depends on all)*: Verify + BENCH-03 carry-forward — `bench/PandasBench` streaming variant + `04-baseline.json` (extends 03-baseline.json with 2 streaming benchmarks at 50% tolerance) + `04-BASELINE-AFTER.md` + `04-VERIFICATION.md`
 
 **Cross-cutting constraints:**
