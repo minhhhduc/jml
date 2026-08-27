@@ -1,5 +1,7 @@
 package sklearn.neural_network;
 
+import numja.NumericStable;
+
 /**
  * Activation functions for neural networks
  */
@@ -87,22 +89,6 @@ public class Activations {
      * @return softmax probabilities
      */
     public static double[] softmax(double[] x) {
-        double max = Double.NEGATIVE_INFINITY;
-        for (double val : x) {
-            if (val > max) max = val;
-        }
-        
-        double[] exp = new double[x.length];
-        double sum = 0;
-        for (int i = 0; i < x.length; i++) {
-            exp[i] = Math.exp(x[i] - max);
-            sum += exp[i];
-        }
-        
-        double[] result = new double[x.length];
-        for (int i = 0; i < x.length; i++) {
-            result[i] = exp[i] / sum;
-        }
-        return result;
+        return NumericStable.softmax(x);
     }
 }

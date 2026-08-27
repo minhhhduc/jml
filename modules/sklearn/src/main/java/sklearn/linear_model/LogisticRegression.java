@@ -2,6 +2,7 @@ package sklearn.linear_model;
 
 import numja.core.NDArray;
 import numja.NumJa;
+import numja.NumericStable;
 
 /**
  * Logistic Regression - Binary and Multi-class Classification
@@ -168,19 +169,7 @@ public class LogisticRegression {
     }
 
     private double[] softmax(double[] x) {
-        double max = Double.NEGATIVE_INFINITY;
-        for (double v : x) if (v > max) max = v;
-
-        double[] exp = new double[x.length];
-        double sum = 0;
-        for (int i = 0; i < x.length; i++) {
-            exp[i] = Math.exp(x[i] - max);
-            sum += exp[i];
-        }
-        for (int i = 0; i < x.length; i++) {
-            exp[i] /= sum;
-        }
-        return exp;
+        return NumericStable.softmax(x);
     }
 
     private int argmax(double[] arr) {
