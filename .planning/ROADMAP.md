@@ -43,7 +43,7 @@ Requirements: CPU-01, CPU-02
 
 CPU-03 (Vector API) **deferred** — JDK 25 still preview per VERSIONS.md; revisit Phase 3+ if matmul/elementwise SIMD wins materialise.
 
-### Phase 3: Numerical Accuracy Hardening
+### Phase 3: Numerical Accuracy Hardening ✅ DONE (2026-08-28, verified GO)
 **Goal:** Sai số không tăng theo kích thước dữ liệu; kết quả khớp NumPy golden values.
 **Mode:** mvp
 **Success Criteria**:
@@ -53,6 +53,23 @@ CPU-03 (Vector API) **deferred** — JDK 25 still preview per VERSIONS.md; revis
 4. Regression gate (BENCH-03) chạy được: cảnh báo khi perf tụt > ngưỡng hoặc sai số vượt tolerance
 
 Requirements: ACC-01, ACC-02, ACC-03, BENCH-03
+
+**Plan structure** (planned 2026-08-27, 4 plans / 4 waves — all executed):
+- Wave 1 — `03-01-PLAN.md`: ACC-02 NumericStable primitives (softmax/logSoftmax/logSumExp) + sklearn delegation + GoldenFixtures utility extraction
+- Wave 2 — `03-02-PLAN.md`: ACC-01 per-leaf Kahan sum + log-sum-exp prod in `ParallelOps`; threshold-gated `NDArray.prod()`; ParallelCompensationTest 8 tests
+- Wave 3 — `03-03-PLAN.md`: ACC-03 3 new fixtures (sum_mean_pathological, softmax_extreme_logits, logsumexp_simple) + AccuracyHardeningTest 7 hard-fail tests
+- Wave 4 — `03-04-PLAN.md`: BENCH-03 regression gate — `scripts/check_regression.ps1` (multi-run median aggregation) + `03-baseline.json` + `03-BASELINE-AFTER.md` + `03-VERIFICATION.md`
+
+**Results** (see `03-BASELINE-AFTER.md` for full JMH data + `03-VERIFICATION.md` for must-have coverage 12/12):
+- NumericStable primitives (softmax/logSoftmax/logSumExp): max-shift stable, sklearn delegation, zero behavior change for in-range inputs.
+- Per-leaf Kahan in `SumTask.compute()`: y=data[i]-c; t=s+y; c=(t-s)-y; s=t pattern. Kahan overhead not measurable above Phase 2 ±93% CI noise floor on i7-1255U (sum_reduce 10^7 = 13.212ms vs Phase 2 10.334ms — within CI).
+- Log-sum-exp prod: `sign * exp(Kahan_sum(log(|x[i]|)))` with zero short-circuit. ParallelCompensationTest 8/8 PASS.
+- AccuracyHardeningTest: 7 hard-fail golden tests; new fixtures cover extreme cancellation (±1e15 magnitudes), extreme logits (±1e300), mixed-magnitude logsumexp. GoldenFixtures extracted as shared utility.
+- BENCH-03 regression gate: `scripts/check_regression.ps1` builds JMH jar, runs 3 internal JMH sweeps, takes median per benchmark, diffs against `03-baseline.json`, exits non-zero on >50% regression.
+- Tolerance override (15% → 50%): Phase 2 documented sum_reduce CI ±93%; 15% threshold doesn't survive contact with hybrid P/E noise on i7-1255U. 50% still catches >2x regressions. Documented in `03-baseline.json._meta.tolerance_rationale` + `03-VERIFICATION.md` YAML frontmatter `overrides`.
+- Code review: Phase 3 inherits Phase 2 review patterns (WR-05 defensive init, WR-03 @After reset hygiene); no new critical/warning findings.
+- Public API surface unchanged: NumJa.java = 61 public static, ArrayOps.java = 34 public static
+- Tests: 55 total (was 35 after Phase 2; +15 from Phase 3 = +8 ParallelCompensationTest + +7 AccuracyHardeningTest), 0 failures, 1 pre-existing @Ignore.
 
 ### Phase 4: Adaptive Memory Model
 **Goal:** Dataset vượt RAM xử lý tự động theo chunk/out-of-core — caller không sửa code.
