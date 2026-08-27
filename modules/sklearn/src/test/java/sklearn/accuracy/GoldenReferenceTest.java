@@ -4,16 +4,14 @@ import numja.NumJa;
 import numja.core.NDArray;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.PrintWriter;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -34,6 +32,10 @@ import static org.junit.Assert.assertTrue;
  * Inputs are regenerated from each file's "seed" via java.util.Random —
  * identical to what scripts/golden/generate_golden.py used (Java-compatible
  * LCG), so golden files store expected values only, not raw inputs.
+ *
+ * Shared loader/check helpers now live in {@link GoldenFixtures}; this class
+ * keeps its own {@code seeded} / {@code readIrisFeatures} helpers because they
+ * are not part of the cross-class fixture contract.
  */
 @Category(GoldenReferenceTest.Golden.class)
 public class GoldenReferenceTest {
@@ -41,66 +43,38 @@ public class GoldenReferenceTest {
     /** Marker interface for JUnit 4 category filtering. */
     public interface Golden {}
 
-    private static final String GOLDEN_DIR = "../../bench/src/test/resources/golden";
-    private static final List<String> REPORT = new ArrayList<>();
-
     @BeforeClass
     public static void resetReport() {
-        REPORT.clear();
-        REPORT.add("Golden accuracy report (NumJa vs NumPy), soft-fail mode");
+        GoldenFixtures.resetReport();
     }
 
-    // ---------------- helpers ----------------
+    // ---------------- golden-fixture delegates (soft-fail) ----------------
 
     private static JSONObject load(String name) throws Exception {
-        try (InputStream in = GoldenReferenceTest.class.getResourceAsStream("/golden/" + name + ".json")) {
-            if (in != null) return new JSONObject(new JSONTokener(in));
-        }
-        // golden files live in bench/src/test/resources, not on this module's test classpath
-        File f = new File(GOLDEN_DIR + "/" + name + ".json");
-        if (!f.exists()) throw new IllegalStateException("Golden file not found: " + name);
-        try (InputStream fin = new FileInputStream(f)) {
-            return new JSONObject(new JSONTokener(fin));
-        }
+        return GoldenFixtures.load(name);
     }
 
-    private static double relErr(double actual, double expected) {
-        double denom = Math.max(Math.abs(expected), 1e-30);
-        return Math.abs(actual - expected) / denom;
-    }
-
-    /** Record a PASS/FAIL line; never throws (soft-fail). */
     private static void check(String label, double actual, double expected, double tolRel) {
-        double err = relErr(actual, expected);
-        boolean pass = err <= tolRel;
-        String msg = String.format("%s %-40s err=%.3e (tol %.0e)", pass ? "PASS" : "FAIL", label, err, tolRel);
-        if (!pass) {
-            msg += String.format(" actual=%.17g expected=%.17g", actual, expected);
-        }
-        REPORT.add(msg);
-        System.out.println("[GOLDEN] " + msg);
+        GoldenFixtures.check(label, actual, expected, tolRel);
     }
 
-    /** Same as {@link #check} for pre-aggregated max-error values. */
     private static void checkMaxErr(String label, double maxErr, double tolRel) {
-        boolean pass = maxErr <= tolRel;
-        String msg = String.format("%s %-40s maxErr=%.3e (tol %.0e)", pass ? "PASS" : "FAIL", label, maxErr, tolRel);
-        REPORT.add(msg);
-        System.out.println("[GOLDEN] " + msg);
-    }
-
-    private static void flushReport() {
-        try (PrintWriter w = new PrintWriter("target/golden-report.txt", "UTF-8")) {
-            for (String line : REPORT) w.println(line);
-        } catch (Exception e) {
-            System.err.println("[GOLDEN] could not write report: " + e.getMessage());
-        }
+        GoldenFixtures.checkMaxErr(label, maxErr, tolRel);
     }
 
     private static void assertMechanicsOnly() {
-        flushReport();
-        assertTrue(true); // soft-fail: per-op gaps live in REPORT/stderr/target/golden-report.txt
+        GoldenFixtures.assertMechanicsOnly();
     }
+
+    private static double[] jsonToDoubleArray(JSONArray arr) {
+        return GoldenFixtures.jsonToDoubleArray(arr);
+    }
+
+    private static double tol(JSONObject g) {
+        return g.getDouble("tolerance_rel");
+    }
+
+    // ---------------- private helpers (test-specific) ----------------
 
     /** Regenerate inputs exactly as generate_golden.py did (java.util.Random LCG). */
     private static Random seeded(long seed) {
@@ -112,7 +86,7 @@ public class GoldenReferenceTest {
         File f = new File("../../dist/datasets/iris.csv");
         if (!f.exists()) throw new IllegalStateException("iris.csv not found: " + f.getPath());
         List<double[]> rows = new ArrayList<>();
-        try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(f))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
             String line = br.readLine(); // skip header
             while ((line = br.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
@@ -123,12 +97,6 @@ public class GoldenReferenceTest {
             }
         }
         return rows.toArray(new double[0][]);
-    }
-
-    private static double[] jsonToDoubleArray(JSONArray arr) {
-        double[] out = new double[arr.length()];
-        for (int i = 0; i < arr.length(); i++) out[i] = arr.getDouble(i);
-        return out;
     }
 
     // ---------------- tests ----------------
@@ -150,7 +118,7 @@ public class GoldenReferenceTest {
         double tol = g.getDouble("tolerance_rel");
         double maxErr = 0;
         for (int i = 0; i < expected.length(); i++) {
-            maxErr = Math.max(maxErr, relErr(result.getData().get(i), expected.getDouble(i)));
+            maxErr = Math.max(maxErr, GoldenFixtures.relErr(result.getData().get(i), expected.getDouble(i)));
         }
         checkMaxErr("matmul_256 maxErr", maxErr, tol);
         assertMechanicsOnly();
@@ -192,7 +160,7 @@ public class GoldenReferenceTest {
         for (int i = 0; i < x.length; i++) { e[i] = Math.exp(x[i] - max); sum += e[i]; }
         double maxErr = 0;
         for (int i = 0; i < x.length; i++) {
-            maxErr = Math.max(maxErr, relErr(e[i] / sum, expected.getDouble(i)));
+            maxErr = Math.max(maxErr, GoldenFixtures.relErr(e[i] / sum, expected.getDouble(i)));
         }
         checkMaxErr("softmax_1000 [reference-only] maxErr", maxErr, tol(g));
         assertMechanicsOnly();
@@ -232,14 +200,10 @@ public class GoldenReferenceTest {
         assertMechanicsOnly();
     }
 
-    private static double tol(JSONObject g) {
-        return g.getDouble("tolerance_rel");
-    }
-
     @Ignore("Summary printer — run manually to dump full golden report")
     @Test
     public void printReport() {
         System.out.println("=== GOLDEN REPORT ===");
-        for (String line : REPORT) System.out.println(line);
+        GoldenFixtures.flushReport();
     }
 }
