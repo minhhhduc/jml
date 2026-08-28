@@ -44,8 +44,8 @@ See: .planning/PROJECT.md (updated 2026-08-25)
 - Build: Maven 3.9.15 tại `C:\Users\Admin\.maven\maven-3.9.15\bin` (**không trên PATH** — prefix `$env:Path = '...\bin;' + $env:Path`)
 - Benchmarks: `mvn -pl bench -am package -DskipTests` rồi `java -jar bench/target/benchmarks.jar` từ repo root
 - Golden tests: `mvn -pl modules/sklearn -am test "-Dtest=GoldenReferenceTest" "-Dsurefire.failIfNoSpecifiedTests=false"`
-- Tests: full suite xanh (55 tests, 0 failures, 1 pre-existing @Ignore on GoldenReferenceTest). JUnit 4. Phase 3 added 15 tests (ParallelCompensationTest 8, AccuracyHardeningTest 7). Phase 2 added 28 new tests across 6 classes (ThreadPoolConfigTest, ParallelOpsTest, ParallelElementwiseTest, ParallelReduceTest, ParallelRegressionTest).
-- API công khai bị đóng băng (v0.2.0) — mọi tối ưu là internal. NumJa.java = 61 public static, ArrayOps.java = 34 public static (both unchanged through Phase 2).
+- Tests: full suite xanh (90 tests, 0 failures, 1 pre-existing @Ignore on GoldenReferenceTest). JUnit 4. Phase 4 added 35 tests across 6 classes (ChunkedReadOptionsTest 6 + CsvChunkReaderTest 7 + RunningGroupAggregatorTest 8 + PandasStreamingTest 5 + GaussianNBPartialFitTest 5 + PandasPipelineTest 4). Phase 3 added 15 tests (ParallelCompensationTest 8, AccuracyHardeningTest 7). Phase 2 added 28 new tests across 6 classes (ThreadPoolConfigTest, ParallelOpsTest, ParallelElementwiseTest, ParallelReduceTest, ParallelRegressionTest).
+- API công khai bị đóng băng (v0.2.0) — mọi tối ưu là internal. NumJa.java = 61 public static, ArrayOps.java = 34 public static (both unchanged). Pandas.java = 11 (+1 read_csv_streaming, Phase 4). GaussianNB.java = +2 partial_fit + finalize_fit (Phase 4).
 
 ## Decisions Log
 
