@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.numja</groupId>
+        <artifactId>numja</artifactId>
+        <version>0.1.0</version>
+        <relativePath>../../pom.xml</relativePath>
+ </parent>
+
+    <artifactId>tornado-poc</artifactId>
+    <packaging>jar</packaging>
+
+    <name>NumJa TornadoVM GPU POC</name>
+    <description>Phase 5 POC: 4096^2 GEMM via numja-core (CPU baseline) vs TornadoVM (GPU candidate). Isolated module - production paths in modules/numja stay stdlib-only. Per HW-03, GPU dispatch is opt-in via -Dtornado.device; absent device labels result=GPU_ABSENT</description>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+ </properties>
+
+    <dependencies>
+        <!-- CPU baseline via the production HAL path (proves the baseline is the live one) -->
+        <dependency>
+            <groupId>com.numja</groupId>
+            <artifactId>numja-core</artifactId>
+            <version>0.1.0</version>
+     </dependency>
+
+        <!-- TornadoVM 5.2.0-jdk21 (groupId verified from beehive-lab/TornadoVM v5.2.0-jdk21 tag pom.xml):
+             api + runtime + drivers. The SDK ships these jars in its local Maven repo after `bin/tornado`
+             initialises the environment, so the build resolves from the in-SDK repo, not Maven Central. -->
+        <dependency>
+            <groupId>io.github.beehive-lab</groupId>
+            <artifactId>tornado-api</artifactId>
+            <version>5.2.0-jdk21</version>
+     </dependency>
+        <dependency>
+            <groupId>io.github.beehive-lab</groupId>
+            <artifactId>tornado-runtime</artifactId>
+            <version>5.2.0-jdk21</version>
+     </dependency>
+        <dependency>
+            <groupId>io.github.beehive-lab</groupId>
+            <artifactId>tornado-drivers</artifactId>
+            <version>5.2.0-jdk21</version>
+     </dependency>
+ </dependencies>
+
+    <build>
+        <finalName>tornado-poc-jar</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.0</version>
+                <configuration>
+                    <release>21</release>
+             </configuration>
+         </plugin>
+
+            <!-- Shaded standalone jar - same pattern as bench/pom.xml; the runner is invoked
+                 via `java -cp ... bench.tornadopoc.GemmBench` after `mvn package`. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                     </goals>
+                        <configuration>
+                            <finalName>tornado-poc-jar</finalName>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>bench.tornadopoc.GemmBench</mainClass>
+                             </transformer>
+                         </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                 </excludes>
+                             </filter>
+                         </filters>
+                     </configuration>
+                 </execution>
+             </executions>
+         </plugin>
+     </plugins>
+ </build>
+</project>

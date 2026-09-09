@@ -69,5 +69,6 @@
         <module>modules/pandas</module>
         <module>modules/sklearn</module>
         <module>bench</module>
+        <module>bench/tornado-poc</module>
     </modules>
 </project>
