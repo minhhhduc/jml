@@ -66,8 +66,8 @@ public final class GemmBench {
         }
 
         // Fixed-seed input data so the CPU and GPU paths compute the same C.
-        final double[] a = seededRandom(n * n, 0xC0FFEE_L);
-        final double[] b = seededRandom(n * n, 0xBADF00D_L);
+        final double[] a = seededRandom(n * n, 0xC0FFEEL);
+        final double[] b = seededRandom(n * n, 0xBADF00DL);
         final double[] cCpu = new double[n * n];
 
         // ---- CPU baseline (production path: ArrayOps.dot -> BackendSelector -> CpuThreadBackend.matmul)
