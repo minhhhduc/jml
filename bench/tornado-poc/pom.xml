@@ -60,7 +60,10 @@
                 <version>3.14.0</version>
                 <configuration>
                     <release>21</release>
-             </configuration>
+                    <compilerArgs>
+                        <arg>--enable-preview</arg>
+                  </compilerArgs>
+           </configuration>
          </plugin>
 
             <!-- Shaded standalone jar - same pattern as bench/pom.xml; the runner is invoked
