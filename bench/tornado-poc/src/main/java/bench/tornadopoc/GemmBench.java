@@ -158,10 +158,39 @@ public final class GemmBench {
             }
             gpuMs = median(samples);
 
-            // Sanity: GPU vs CPU first-cell relative error must be < 1e-6.
-            final double err = Math.abs(cCpu[0] - cTornado.get(0)) / Math.max(1.0, Math.abs(cCpu[0]));
-            if (err > 1e-6) {
-                System.err.println("[GemmBench] numeric mismatch err=" + err + " - aborting");
+            // Numerical verification: full-matrix CPU-vs-GPU comparison.
+            // For double-precision GEMM at N=4096 the theoretical error is O(N*eps) ~ 1e-12.
+            // Threshold 1e-9 = ~1000x safety margin; catches any kernel bug (wrong index,
+            // missing barrier, partial sum, off-by-one) that would otherwise hide behind
+            // a single-cell check.
+            double maxAbsErr = 0.0;
+            double maxRelErr = 0.0;
+            double sse = 0.0;     // sum of squared errors  (= ||A-B||_F^2)
+            double mae = 0.0;     // mean absolute error    (= MAE for matrix equality)
+            double frobCpu = 0.0; // ||cCpu||_F^2
+            final double eps = 1e-12;
+            for (int i = 0; i < n * n; i++) {
+                final double cpu = cCpu[i];
+                final double gpu = cTornado.get(i);
+                final double diff = cpu - gpu;
+                final double absDiff = Math.abs(diff);
+                if (absDiff > maxAbsErr) maxAbsErr = absDiff;
+                final double denom = Math.max(Math.abs(cpu), eps);
+                final double rel = absDiff / denom;
+                if (rel > maxRelErr) maxRelErr = rel;
+                sse += diff * diff;
+                mae += absDiff;
+                frobCpu += cpu * cpu;
+            }
+            final double frobRelErr = Math.sqrt(sse) / Math.max(Math.sqrt(frobCpu), eps);
+            mae /= (n * n);
+            emit("cpu_vs_gpu_max_abs_err", String.format("%.3e", maxAbsErr));
+            emit("cpu_vs_gpu_max_rel_err", String.format("%.3e", maxRelErr));
+            emit("cpu_vs_gpu_frob_rel_err", String.format("%.3e", frobRelErr));
+            emit("cpu_vs_gpu_mae", String.format("%.3e", mae));
+            if (frobRelErr > 1e-9) {
+                System.err.println("[GemmBench] numeric mismatch frob_rel_err=" + frobRelErr
+                        + " > 1e-9 - aborting (kernel produced wrong output)");
                 result = "NUMERIC_MISMATCH";
                 gpuMs = -1;
             } else {
