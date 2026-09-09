@@ -408,7 +408,7 @@ public class NDArray {
             }
             return sum;
         }
-        return ParallelOps.sum(data.data);
+        return BackendSelector.sum(data.data);
     }
 
     /**
@@ -432,7 +432,7 @@ public class NDArray {
             }
             return min;
         }
-        return ParallelOps.min(data.data);
+        return BackendSelector.min(data.data);
     }
 
     /**
@@ -449,12 +449,13 @@ public class NDArray {
             }
             return max;
         }
-        return ParallelOps.max(data.data);
+        return BackendSelector.max(data.data);
     }
 
     /**
      * Product of all elements. Sub-threshold: sequential loop (bit-identical to v0.2.0).
-     * Above {@link ParallelOps#THRESHOLD}: log-sum-exp compensated via {@link ParallelOps#prod}.
+     * Above {@link ParallelOps#THRESHOLD}: log-sum-exp compensated via {@link BackendSelector#prod}
+     * which delegates 1:1 to {@link ParallelOps#prod}.
      */
     public double prod() {
         int n = data.numRows * data.numCols;
@@ -465,7 +466,7 @@ public class NDArray {
             }
             return product;
         }
-        return ParallelOps.prod(data.data);
+        return BackendSelector.prod(data.data);
     }
     
     /**

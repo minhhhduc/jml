@@ -208,12 +208,20 @@ public class ArrayOps {
     }
     
     /**
-     * Dot product / Matrix multiplication
+     * Dot product / Matrix multiplication. Routes through
+     * {@link BackendSelector#get()}().{@code matmul} so future GPU backends can
+     * be swapped in without touching this call site. The selected backend's
+     * matmul body is byte-equivalent to the prior inline EJML path
+     * ({@code CpuThreadBackend.matmul} wraps {@code CommonOps_DDRM.mult} on
+     * raw arrays), so the numerics are bit-identical.
      */
     public static NDArray dot(NDArray a, NDArray b) {
-        DMatrixRMaj result = new DMatrixRMaj(a.getData().numRows, b.getData().numCols);
-        CommonOps_DDRM.mult(a.getData(), b.getData(), result);
-        return new NDArray(result, new int[]{a.getData().numRows, b.getData().numCols});
+        DMatrixRMaj ma = a.getData();
+        DMatrixRMaj mb = b.getData();
+        int aRows = ma.numRows, aCols = ma.numCols, bRows = mb.numRows, bCols = mb.numCols;
+        DMatrixRMaj result = new DMatrixRMaj(aRows, bCols);
+        BackendSelector.get().matmul(ma.data, aRows, aCols, mb.data, bRows, bCols, result.data);
+        return new NDArray(result, new int[]{aRows, bCols});
     }
     
     /**
