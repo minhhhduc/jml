@@ -81,6 +81,11 @@
                         <configuration>
                             <finalName>tornado-poc-jar</finalName>
                             <transformers>
+                                <!-- Merge META-INF/services: TornadoVM registers its CUDA
+                                     backend via ServiceLoader. Without this transformer the
+                                     shaded jar drops the provider file and the runtime finds
+                                     0 drivers (device=GPU_ABSENT). -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>bench.tornadopoc.GemmBench</mainClass>
                              </transformer>
