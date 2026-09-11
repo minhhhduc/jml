@@ -142,8 +142,11 @@ Requirements: USE-01 (+ release hygiene)
 
 **Note:** Chỉ thực thi nếu Phase 5 tornado-poc Colab run kết luận NO-GO. Nếu Phase 5 đạt GO thì phase này chuyển thành optional follow-up hoặc bị xóa.
 
+**Plans:** 2 plans
+
 Plans:
-- [ ] TBD (run /gsd-plan-phase 7 to break down)
+- [ ] 07-01-PLAN.md — Build isolated JCuda/cuBLAS Dgemm benchmark with local NO-GO handling and numerical/performance gates
+- [ ] 07-02-PLAN.md — Run the dedicated Colab T4 POC and record an evidence-backed GO/NO-GO conclusion
 
 ## Requirement Coverage
 
