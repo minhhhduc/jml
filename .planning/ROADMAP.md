@@ -129,6 +129,22 @@ Requirements: HW-01, HW-02, HW-03
 
 Requirements: USE-01 (+ release hygiene)
 
+### Phase 7: GPU Fallback POC via JCuda/cuBLAS
+
+**Goal:** POC GPU thứ hai qua JCuda 12.6 + cuBLAS Dgemm (sau khi TornadoVM POC bị đánh giá NO-GO hoặc không chạy được trên Colab T4). Isolated benchmark module, không đụng production paths; chỉ tích hợp vào HAL nếu benchmark đạt numerical gate (frob_rel_err <= 1e-9) và perf gate (speedup >= 2x, transfer < 50%).
+**Mode:** mvp
+**Depends on:** Phase 5 (hardware abstraction layer exists; GO/NO-GO evidence)
+**Success Criteria:**
+1. Isolated bench module (bench/jcuda-poc) chạy được cuBLAS Dgemm trên Colab T4, cùng format key=value + Frobenius check như tornado-poc
+2. Benchmark đo được gpu_ms, transfer_ms, speedup_ratio so CPU baseline (cùng N=4096, cùng seeds)
+3. Kết luận go/no-go cho GPU production backend (JCuda vs TornadoVM vs defer) dựa trên số liệu
+4. Public API NumJa/ArrayOps không đổi; production modules vẫn không phụ thuộc JCuda
+
+**Note:** Chỉ thực thi nếu Phase 5 tornado-poc Colab run kết luận NO-GO. Nếu Phase 5 đạt GO thì phase này chuyển thành optional follow-up hoặc bị xóa.
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 7 to break down)
+
 ## Requirement Coverage
 
 | Requirement | Phase |
@@ -148,6 +164,7 @@ Requirements: USE-01 (+ release hygiene)
 | HW-01 | 5 |
 | HW-02 | 5 |
 | HW-03 | 5 |
+| GPU-04 | 7 (conditional on Phase 5 NO-GO) |
 | USE-01 | 6 |
 | USE-02 | 4 |
 

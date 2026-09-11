@@ -23,6 +23,7 @@
 - [ ] **HW-01**: Interface ComputeBackend cho phép route một op tới backend khác nhau (CPU threads mặc định)
 - [ ] **HW-02**: Op dispatch tự động chọn backend theo khả năng máy + kích thước công việc
 - [ ] **HW-03**: Research document kết luận GPU/TPU backend (TornadoVM vs alternatives) với POC benchmark ít nhất 1 op
+- [ ] **GPU-04** (conditional): Nếu TornadoVM POC NO-GO — POC fallback qua thư viện GPU JVM khác (JCuda/cuBLAS) với benchmark cùng chuẩn numerical/perf gates; chỉ tích hợp nếu đạt cả hai gate
 
 ### Numerical Accuracy
 - [ ] **ACC-01**: Reduce lớn dùng Kahan/compensated summation — sai số không tăng theo kích thước dữ liệu

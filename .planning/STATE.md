@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v0.3.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-09-09T10:39:14.292Z"
+last_updated: "2026-09-09T14:09:00.547Z"
 progress:
   total_phases: 6
   completed_phases: 5
@@ -32,6 +32,8 @@ Plan: 1 of 3
 - **Phase 3:** **✅ CLOSED (verified GO 2026-08-28)** — plans 03-01..03-04 all executed (NumericStable + Kahan/log-sum-exp + AccuracyHardeningTest + BENCH-03 gate). Commits: `7e82b14`, `37975ac`, `ebd0a86`, `4144ee6`, `6ea1afe`, `065f219`, `3e209b3`, `ca0306a`, `2d026a7`, `0c97953`, `844d254`. All 4 requirements (ACC-01/02/03 + BENCH-03) verified. `mvn test` 55 tests green, 0 failures, 1 @Ignore. Public API frozen (61/34). 1 tolerance override: 15% → 50% in `03-baseline.json` (hybrid P/E noise floor exceeds original D-12 threshold; documented in `_meta.tolerance_rationale`). Regression gate `scripts/check_regression.ps1` self-consistent.
 - **Phase 4:** **✅ CLOSED (verified GO 2026-08-28)** — Adaptive Memory Model, all 4 plans executed. Wave 1: `ChunkedReadOptions` + `CsvChunkReader` (6+7 tests). Wave 2: `RunningGroupAggregator` (sum/mean/count/min/max/std, 8 tests) + `Pandas.read_csv_streaming` (sibling method, +1 to Pandas API; 5 tests). Wave 3: `GaussianNB.partial_fit` + `finalize_fit` (Chan's parallel M2, 5 tests) + `PandasPipeline` fluent builder (4 tests). Wave 4 commits: `f9d216a` (2 streaming JMH benchmarks), `3db7f36` (gate + 04-baseline.json), `cc9d5d2` (BASELINE-AFTER.md). `04-VERIFICATION.md` 22/22 must-haves PASS. All 5 requirements (MEM-01/02/03 + USE-02 + BENCH-03) verified. `mvn test` 90 tests, 0 failures, 1 pre-existing @Ignore. Public API: NumJa=61 frozen, ArrayOps=34 frozen, Pandas=+1 (read_csv_streaming), GaussianNB=+2 (partial_fit, finalize_fit). Stdlib-only; 0 new Maven deps. 1 tolerance override: 50% (Phase 3 carry-forward) in `04-baseline.json`. Regression gate self-consistent, idempotent.
 - **Phase 5:** Hardware Abstraction Layer & GPU POC — **READY TO EXECUTE**
+- **Phase 6:** Usability Polish & Release — planned (roadmap only, no plans yet)
+- **Phase 7 (added 2026-09-12):** GPU Fallback POC via JCuda/cuBLAS — conditional on Phase 5 TornadoVM NO-GO; isolated `bench/jcuda-poc`, same numerical (frob_rel_err ≤ 1e-9) + perf (speedup ≥ 2x, transfer < 50%) gates; production modules untouched unless both gates pass. Requirement GPU-04.
 - **Branch:** `dev`
 
 ## Key Context for Future Sessions
