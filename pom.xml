@@ -70,5 +70,6 @@
         <module>modules/sklearn</module>
         <module>bench</module>
         <module>bench/tornado-poc</module>
+        <module>bench/jcuda-poc</module>
     </modules>
 </project>
