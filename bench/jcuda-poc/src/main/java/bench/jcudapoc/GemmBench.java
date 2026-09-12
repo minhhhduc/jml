@@ -38,27 +38,33 @@ public final class GemmBench {
         final double[] a = seededRandom(cells, 0xC0FFEEL);
         final double[] b = seededRandom(cells, 0xBADF00DL);
         final double[] cCpu = new double[cells];
-        final double cpuBaselineMs = timeMedianMs(3, () -> {
+        final Runnable cpuDot = () -> {
             final NDArray result = ArrayOps.dot(new NDArray(reshapeFlat(a, n)), new NDArray(reshapeFlat(b, n)));
             System.arraycopy(result.getData().data, 0, cCpu, 0, cells);
-        });
+        };
+        cpuDot.run(); // Untimed warmup.
+        final TimingSamples cpu = timeSamplesMs(3, cpuDot);
 
         final ProbeResult probe = probeDevice();
         if (probe.result() != null) {
-            emitResult(cpuBaselineMs, "NA", "NA", "NA", "NA", probe.device(), probe.result(), "NO-GO", n, env, "NA");
+            emitSamples("cpu_sample", cpu.samplesMs());
+            emitResult(cpu.medianMs(), "NA", "NA", "NA", "NA", probe.device(), probe.result(), "NO-GO", n, env, "NA");
             return;
         }
 
         try {
-            final GpuResult gpu = runGpu(cpuBaselineMs, a, b, cCpu, n);
+            final GpuResult gpu = runGpu(cpu.medianMs(), a, b, cCpu, n);
+            emitSamples("cpu_sample", cpu.samplesMs());
+            emitSamples("gpu_sample", gpu.samplesMs());
             emit("cpu_vs_gpu_max_abs_err", format(gpu.errors().maxAbsErr()));
             emit("cpu_vs_gpu_max_rel_err", format(gpu.errors().maxRelErr()));
             emit("cpu_vs_gpu_mae", format(gpu.errors().mae()));
-            emitResult(cpuBaselineMs, gpu.gpuMs(), gpu.transferMs(), gpu.speedupRatio(), gpu.transferPct(),
+            emitResult(cpu.medianMs(), gpu.gpuMs(), gpu.transferMs(), gpu.speedupRatio(), gpu.transferPct(),
                     probe.device(), gpu.result(), gpu.verdict(), n, env, format(gpu.errors().frobRelErr()));
         } catch (UnsatisfiedLinkError | RuntimeException e) {
             System.err.println("[GemmBench] GPU initialization failed: " + e.getClass().getName() + ": " + e.getMessage());
-            emitResult(cpuBaselineMs, "NA", "NA", "NA", "NA", probe.device(), "GPU_INIT_FAILED", "NO-GO", n, env, "NA");
+            emitSamples("cpu_sample", cpu.samplesMs());
+            emitResult(cpu.medianMs(), "NA", "NA", "NA", "NA", probe.device(), "GPU_INIT_FAILED", "NO-GO", n, env, "NA");
         }
     }
 
@@ -115,6 +121,7 @@ public final class GemmBench {
 
             handle = new cublasHandle();
             JCublas2.cublasCreate(handle);
+            final cublasHandle activeHandle = handle;
             final Pointer alpha = Pointer.to(new double[] {1.0});
             final Pointer beta = Pointer.to(new double[] {0.0});
 
@@ -124,17 +131,14 @@ public final class GemmBench {
             final long h2dNs = System.nanoTime() - h2dStart;
 
             // Row-major A×B is column-major (A×B)^T = B^T×A^T, so cuBLAS receives B first.
-            dgemm(handle, alpha, dB, dA, beta, dC, n);
+            dgemm(activeHandle, alpha, dB, dA, beta, dC, n);
             cudaDeviceSynchronize(); // Untimed warmup initializes cuBLAS workspaces and kernels.
 
-            final long[] samples = new long[3];
-            for (int i = 0; i < samples.length; i++) {
-                final long start = System.nanoTime();
-                dgemm(handle, alpha, dB, dA, beta, dC, n);
+            final TimingSamples gpu = timeSamplesMs(3, () -> {
+                dgemm(activeHandle, alpha, dB, dA, beta, dC, n);
                 cudaDeviceSynchronize();
-                samples[i] = System.nanoTime() - start;
-            }
-            final double gpuMs = median(samples) / 1_000_000.0;
+            });
+            final double gpuMs = gpu.medianMs();
 
             final double[] cGpu = new double[n * n];
             final long d2hStart = System.nanoTime();
@@ -143,13 +147,13 @@ public final class GemmBench {
 
             final ErrorMetrics errors = compare(cCpu, cGpu);
             if (errors.frobRelErr() > FROB_REL_ERR_LIMIT) {
-                return new GpuResult(errors, "NA", transferMs, "NA", "NA", "NUMERIC_MISMATCH", "NO-GO");
+                return new GpuResult(errors, gpu.samplesMs(), "NA", transferMs, "NA", "NA", "NUMERIC_MISMATCH", "NO-GO");
             }
 
             final double speedupRatio = cpuBaselineMs / gpuMs;
             final double transferPct = transferMs / gpuMs * 100.0;
             final String verdict = speedupRatio >= 2.0 && transferPct < 50.0 ? "GO" : "NO-GO";
-            return new GpuResult(errors, gpuMs, transferMs, speedupRatio, transferPct, "OK", verdict);
+            return new GpuResult(errors, gpu.samplesMs(), gpuMs, transferMs, speedupRatio, transferPct, "OK", verdict);
         } finally {
             try {
                 if (handle != null) JCublas2.cublasDestroy(handle);
@@ -199,24 +203,27 @@ public final class GemmBench {
         return values;
     }
 
-    private static double timeMedianMs(int iterations, Runnable action) {
-        action.run();
-        final long[] samples = new long[iterations];
+    private static TimingSamples timeSamplesMs(int iterations, Runnable action) {
+        final double[] samplesMs = new double[iterations];
         for (int i = 0; i < iterations; i++) {
             final long start = System.nanoTime();
             action.run();
-            samples[i] = System.nanoTime() - start;
+            samplesMs[i] = (System.nanoTime() - start) / 1_000_000.0;
         }
-        return median(samples) / 1_000_000.0;
+        return new TimingSamples(samplesMs, median(samplesMs));
     }
 
-    private static long median(long[] samples) {
-        final long[] sorted = samples.clone();
+    private static double median(double[] samples) {
+        final double[] sorted = samples.clone();
         Arrays.sort(sorted);
         return sorted[sorted.length / 2];
     }
 
     private static String format(double value) { return String.format(Locale.ROOT, "%.6e", value); }
+
+    private static void emitSamples(String prefix, double[] samplesMs) {
+        for (int i = 0; i < samplesMs.length; i++) emit(prefix + "_" + (i + 1) + "_ms", format(samplesMs[i]));
+    }
 
     private static void emitResult(Object cpuBaselineMs, Object gpuMs, Object transferMs, Object speedupRatio, Object transferPct,
                                    String device, String result, String verdict, Object n, String env, String frobRelErr) {
@@ -238,7 +245,8 @@ public final class GemmBench {
     private static void emit(String key, String value) { System.out.println(key + "=" + value); }
 
     private record ProbeResult(String device, String result) {}
-    private record GpuResult(ErrorMetrics errors, Object gpuMs, Object transferMs, Object speedupRatio, Object transferPct,
+    private record TimingSamples(double[] samplesMs, double medianMs) {}
+    private record GpuResult(ErrorMetrics errors, double[] samplesMs, Object gpuMs, Object transferMs, Object speedupRatio, Object transferPct,
                              String result, String verdict) {}
     private record ErrorMetrics(double maxAbsErr, double maxRelErr, double mae, double frobRelErr) {}
 }
