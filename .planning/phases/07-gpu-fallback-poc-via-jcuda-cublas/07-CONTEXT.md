@@ -15,7 +15,7 @@ Second GPU POC for the same GEMM benchmark, using JCuda 12.6.0 + cuBLAS `Dgemm` 
 - **D-02:** "Chuyển hết phần tính toán bằng GPU sang JCuda" is the END GOAL across phases, not Phase 7 scope. Phase 7 proves the library works; a later phase does the HAL integration if gates pass.
 
 ### Dependency acquisition (user decision)
-- **D-03:** Notebook downloads JCuda jars at runtime (jcuda.org release matching CUDA 12.6 — 12.6.0 line), then `mvn install:install-file` into the local Maven repo on Colab — same pattern as the TornadoVM SDK jars in `notebooks/colab-gpu-poc.ipynb` Step 1. Nothing vendored into `dist/libs/`, no Windows build-pipeline changes, no new committed binaries.
+- **D-03 (revised 2026-09-11):** Code-only in this session: do not manually download JCuda JARs, run `mvn install:install-file`, resolve Maven dependencies, or run Colab. Declare the pinned Maven Central coordinates (`org.jcuda:jcuda:12.6.0`, `org.jcuda:jcublas:12.6.0`) in the isolated bench POM; a future build/Colab run may resolve them. Nothing is vendored into `dist/libs/`, no Windows build-pipeline changes, and no committed binaries.
 
 ### Bench module shape (user decision)
 - **D-04:** `bench/jcuda-poc` clones the `bench/tornado-poc` structure: same `GemmBench` key=value output format (`cpu_baseline_ms`, `gpu_ms`, `transfer_ms`, `speedup_ratio`, `transfer_pct`, `device`, `result`, `verdict`, `env`, `jdk`, `hardware`, `size`, `cpu_vs_gpu_frob_rel_err`), same seeds (0xC0FFEE, 0xBADF00D), same N=4096, same CPU baseline path. Direct cross-comparison with the TornadoVM numbers from Phase 5.
