@@ -365,18 +365,11 @@ The official `jcuda/jcuda-samples` repo (`JCudaSamples/src/main/java/jcuda/jcubl
 
 Everything else in this research was verified against the live Maven Central artifacts (downloaded, decompiled, ELF-parsed) or read directly from repo files.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Where do the measured results live?** (results doc location)
-   - What we know: CONTEXT requires "measured results + go/no-go conclusion"; Phase 5's results ended up only in the notebook outputs (the planned `docs/05-GPU-POC-RESULTS.md` was never committed).
-   - What's unclear: file path convention for Phase 7's captured numbers.
-   - Recommendation: `.planning/phases/07-gpu-fallback-poc-via-jcuda-cublas/07-RESULTS.md` with the pasted key=value blocks (env, device, jdk, hardware) — keeps the decision evidence next to the phase docs; planner decides.
-2. **Notebook clone branch name.**
-   - What we know: the notebook clones `BRANCH=gsd/phase-05-...` in Phase 5; Phase 7 work will happen on a new phase branch.
-   - Recommendation: planner sets the exact branch string as a task requirement (notebook Step 1 `BRANCH=` var must match the phase-7 branch, e.g. `gsd/phase-07-gpu-fallback-poc-via-jcuda-cublas`).
-3. **NumPy magnitude-reference cell — keep or drop?**
-   - What we know: Phase 5's Step 3 was a magnitude-only reference (Java Random vs PCG64 differ).
-   - Recommendation: keep the identical cell for output-format symmetry — it costs nothing and makes the two notebooks structurally comparable (D-04 spirit).
+1. **Measured-results location:** `.planning/phases/07-gpu-fallback-poc-via-jcuda-cublas/07-RESULTS.md`, populated only after a future authorized run with complete retained key=value output and environment evidence.
+2. **Notebook clone branch:** `gsd/phase-07-gpu-fallback-poc-via-jcuda-cublas`, matching the Phase 7 execution branch.
+3. **NumPy magnitude-reference cell:** retained and explicitly labeled magnitude-only because Java `Random` and NumPy's generator produce different matrices; `GemmBench`'s full-matrix Frobenius metric remains authoritative.
 
 ## Environment Availability
 
