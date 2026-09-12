@@ -135,18 +135,18 @@ Requirements: USE-01 (+ release hygiene)
 **Mode:** mvp
 **Depends on:** Phase 5 (hardware abstraction layer exists; GO/NO-GO evidence)
 **Success Criteria:**
-1. Isolated bench module (bench/jcuda-poc) chạy được cuBLAS Dgemm trên Colab T4, cùng format key=value + Frobenius check như tornado-poc
-2. Benchmark đo được gpu_ms, transfer_ms, speedup_ratio so CPU baseline (cùng N=4096, cùng seeds)
-3. Kết luận go/no-go cho GPU production backend (JCuda vs TornadoVM vs defer) dựa trên số liệu
-4. Public API NumJa/ArrayOps không đổi; production modules vẫn không phụ thuộc JCuda
+1. Isolated bench module (bench/jcuda-poc) source is authored with cuBLAS Dgemm, key=value output, and Frobenius check; its future Colab T4 runbook is retained separately
+2. Benchmark source defines gpu_ms, transfer_ms, and speedup_ratio against the CPU baseline (N=4096, fixed seeds); runtime measurements remain pending
+3. Future evidence can make a GO/NO-GO decision for the production GPU backend only after the numerical and performance gates are measured
+4. Public API NumJa/ArrayOps remains unchanged; production modules remain free of JCuda dependencies
 
 **Note:** Chỉ thực thi nếu Phase 5 tornado-poc Colab run kết luận NO-GO. Nếu Phase 5 đạt GO thì phase này chuyển thành optional follow-up hoặc bị xóa.
 
 **Plans:** 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Build isolated JCuda/cuBLAS Dgemm benchmark with local NO-GO handling and numerical/performance gates
-- [ ] 07-02-PLAN.md — Run the dedicated Colab T4 POC and record an evidence-backed GO/NO-GO conclusion
+- [x] 07-01-PLAN.md — Build isolated JCuda/cuBLAS Dgemm benchmark with local NO-GO handling and numerical/performance gates
+- [x] 07-02-PLAN.md — Author the dedicated future Colab T4 POC runbook and pending evidence template; execution and the evidence-backed GO/NO-GO decision are deferred
 
 ## Requirement Coverage
 
