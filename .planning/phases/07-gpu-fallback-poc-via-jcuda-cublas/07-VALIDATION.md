@@ -34,7 +34,7 @@ created: 2026-09-12
 |---|---|---|---|---|---|---|---|---|---|
 | 07-01-01 | 01 | 1 | GPU-04 | T-07-01 | Isolated Maven deps; production modules contain no `org.jcuda` dependency | smoke/static | `mvn -q -pl bench/jcuda-poc -am package -DskipTests` | ❌ W0 | ⬜ pending |
 | 07-01-02 | 01 | 1 | GPU-04 | T-07-02 | Local no-device run emits safe `GPU_ABSENT` + `NO-GO` result and never hides errors | smoke | `java -jar bench/jcuda-poc/target/jcuda-poc-jar.jar -Dbench.env=local` | ❌ W0 | ⬜ pending |
-| 07-02-01 | 02 | 2 | GPU-04 | T-07-01/T-07-03 | Colab preflight verifies T4 + CUDA 12.6 `libcublas.so.12`; notebook fails without `result=OK` | integration/manual | Run `notebooks/colab-jcuda-poc.ipynb` on Colab GPU runtime | ❌ W0 | ⬜ pending |
+| 07-02-01 | 02 | 2 | GPU-04 | T-07-01/T-07-03 | Colab preflight verifies T4 + CUDA 12.6 `libcublas.so.12`; Java must exit zero and the retained log must contain exactly one `result=` line, `result=OK` | integration/manual | Run `notebooks/colab-jcuda-poc.ipynb` on Colab GPU runtime | ❌ W0 | ⬜ pending |
 | 07-02-02 | 02 | 2 | GPU-04 | T-07-02 | Results record Frobenius, speedup, transfer, device, environment, and explicit GO/NO-GO | manual | Copy notebook result into `07-RESULTS.md` | ❌ W0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
@@ -48,7 +48,7 @@ created: 2026-09-12
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |---|---|---|---|
-| T4 GPU numerical and performance gates | GPU-04 | The local Windows machine has no NVIDIA GPU; Colab is the hardware target | Run the Colab notebook, require `result=OK`, then retain key=value output in `07-RESULTS.md`. |
+| T4 GPU numerical and performance gates | GPU-04 | The local Windows machine has no NVIDIA GPU; Colab is the hardware target | Run the Colab notebook, require a zero Java exit and exactly one `result=OK` line, then retain key=value output in `07-RESULTS.md`. |
 | Production API/dependency freeze | GPU-04 | Scope assertion across repo | Confirm `NumJa.java` stays at 61 public static methods, `ArrayOps.java` stays at 34, and `modules/` contains no `org.jcuda`. |
 
 ## Validation Sign-Off

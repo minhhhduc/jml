@@ -50,7 +50,12 @@ public final class GemmBench {
         }
 
         try {
-            runGpu(cpuBaselineMs, a, b, cCpu, n, env, probe.device());
+            final GpuResult gpu = runGpu(cpuBaselineMs, a, b, cCpu, n);
+            emit("cpu_vs_gpu_max_abs_err", format(gpu.errors().maxAbsErr()));
+            emit("cpu_vs_gpu_max_rel_err", format(gpu.errors().maxRelErr()));
+            emit("cpu_vs_gpu_mae", format(gpu.errors().mae()));
+            emitResult(cpuBaselineMs, gpu.gpuMs(), gpu.transferMs(), gpu.speedupRatio(), gpu.transferPct(),
+                    probe.device(), gpu.result(), gpu.verdict(), n, env, format(gpu.errors().frobRelErr()));
         } catch (UnsatisfiedLinkError | RuntimeException e) {
             System.err.println("[GemmBench] GPU initialization failed: " + e.getClass().getName() + ": " + e.getMessage());
             emitResult(cpuBaselineMs, "NA", "NA", "NA", "NA", probe.device(), "GPU_INIT_FAILED", "NO-GO", n, env, "NA");
@@ -90,7 +95,7 @@ public final class GemmBench {
         }
     }
 
-    private static void runGpu(double cpuBaselineMs, double[] a, double[] b, double[] cCpu, int n, String env, String device) {
+    private static GpuResult runGpu(double cpuBaselineMs, double[] a, double[] b, double[] cCpu, int n) {
         JCublas2.setExceptionsEnabled(true);
         final long bytes = (long) n * n * Sizeof.DOUBLE;
         final Pointer dA = new Pointer();
@@ -137,19 +142,14 @@ public final class GemmBench {
             final double transferMs = (h2dNs + System.nanoTime() - d2hStart) / 1_000_000.0;
 
             final ErrorMetrics errors = compare(cCpu, cGpu);
-            final String frobRelErr = format(errors.frobRelErr());
-            emit("cpu_vs_gpu_max_abs_err", format(errors.maxAbsErr()));
-            emit("cpu_vs_gpu_max_rel_err", format(errors.maxRelErr()));
-            emit("cpu_vs_gpu_mae", format(errors.mae()));
             if (errors.frobRelErr() > FROB_REL_ERR_LIMIT) {
-                emitResult(cpuBaselineMs, "NA", transferMs, "NA", "NA", device, "NUMERIC_MISMATCH", "NO-GO", n, env, frobRelErr);
-                return;
+                return new GpuResult(errors, "NA", transferMs, "NA", "NA", "NUMERIC_MISMATCH", "NO-GO");
             }
 
             final double speedupRatio = cpuBaselineMs / gpuMs;
             final double transferPct = transferMs / gpuMs * 100.0;
             final String verdict = speedupRatio >= 2.0 && transferPct < 50.0 ? "GO" : "NO-GO";
-            emitResult(cpuBaselineMs, gpuMs, transferMs, speedupRatio, transferPct, device, "OK", verdict, n, env, frobRelErr);
+            return new GpuResult(errors, gpuMs, transferMs, speedupRatio, transferPct, "OK", verdict);
         } finally {
             try {
                 if (handle != null) JCublas2.cublasDestroy(handle);
@@ -238,5 +238,7 @@ public final class GemmBench {
     private static void emit(String key, String value) { System.out.println(key + "=" + value); }
 
     private record ProbeResult(String device, String result) {}
+    private record GpuResult(ErrorMetrics errors, Object gpuMs, Object transferMs, Object speedupRatio, Object transferPct,
+                             String result, String verdict) {}
     private record ErrorMetrics(double maxAbsErr, double maxRelErr, double mae, double frobRelErr) {}
 }
