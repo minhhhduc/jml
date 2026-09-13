@@ -3,7 +3,9 @@ package bench.jcudapoc;
 import static jcuda.jcublas.cublasOperation.CUBLAS_OP_N;
 import static jcuda.runtime.JCuda.cudaDeviceSynchronize;
 import static jcuda.runtime.JCuda.cudaFree;
+import static jcuda.runtime.JCuda.cudaGetDevice;
 import static jcuda.runtime.JCuda.cudaMalloc;
+import static jcuda.runtime.JCuda.cudaMemGetInfo;
 import static jcuda.runtime.JCuda.cudaMemcpy;
 import static jcuda.runtime.cudaMemcpyKind.cudaMemcpyDeviceToHost;
 import static jcuda.runtime.cudaMemcpyKind.cudaMemcpyHostToDevice;
@@ -56,6 +58,7 @@ public final class GemmBench {
             final GpuResult gpu = runGpu(cpu.medianMs(), a, b, cCpu, n);
             emitSamples("cpu_sample", cpu.samplesMs());
             emitSamples("gpu_sample", gpu.samplesMs());
+            emitDeviceMemory(gpu.memory());
             emit("cpu_vs_gpu_max_abs_err", format(gpu.errors().maxAbsErr()));
             emit("cpu_vs_gpu_max_rel_err", format(gpu.errors().maxRelErr()));
             emit("cpu_vs_gpu_mae", format(gpu.errors().mae()));
@@ -111,13 +114,27 @@ public final class GemmBench {
         boolean bAllocated = false;
         boolean cAllocated = false;
         cublasHandle handle = null;
+        final DeviceMemory memory;
         try {
+            final long[] freeBefore = new long[1];
+            final long[] total = new long[1];
+            final int[] device = new int[1];
+            cudaGetDevice(device);
+            cudaMemGetInfo(freeBefore, total);
             cudaMalloc(dA, bytes);
             aAllocated = true;
             cudaMalloc(dB, bytes);
             bAllocated = true;
             cudaMalloc(dC, bytes);
             cAllocated = true;
+            final long[] freeAfter = new long[1];
+            cudaMemGetInfo(freeAfter, total);
+            memory = new DeviceMemory(
+                    device[0],
+                    mib(total[0]),
+                    mib(freeBefore[0]),
+                    mib(freeAfter[0]),
+                    (double) bytes * 3 / (1024.0 * 1024.0));
 
             handle = new cublasHandle();
             JCublas2.cublasCreate(handle);
@@ -147,13 +164,16 @@ public final class GemmBench {
 
             final ErrorMetrics errors = compare(cCpu, cGpu);
             if (errors.frobRelErr() > FROB_REL_ERR_LIMIT) {
-                return new GpuResult(errors, gpu.samplesMs(), "NA", transferMs, "NA", "NA", "NUMERIC_MISMATCH", "NO-GO");
+                return new GpuResult(errors, gpu.samplesMs(), memory, "NA", transferMs, "NA", "NA", "NUMERIC_MISMATCH", "NO-GO");
+            }
+            if (memory.freeDecreaseMiB() < memory.expectedBytesMiB() * 0.5) {
+                return new GpuResult(errors, gpu.samplesMs(), memory, "NA", transferMs, "NA", "NA", "NO_DEVICE_MEMORY_EVIDENCE", "NO-GO");
             }
 
             final double speedupRatio = cpuBaselineMs / gpuMs;
             final double transferPct = transferMs / gpuMs * 100.0;
             final String verdict = speedupRatio >= 2.0 && transferPct < 50.0 ? "GO" : "NO-GO";
-            return new GpuResult(errors, gpu.samplesMs(), gpuMs, transferMs, speedupRatio, transferPct, "OK", verdict);
+            return new GpuResult(errors, gpu.samplesMs(), memory, gpuMs, transferMs, speedupRatio, transferPct, "OK", verdict);
         } finally {
             try {
                 if (handle != null) JCublas2.cublasDestroy(handle);
@@ -170,6 +190,8 @@ public final class GemmBench {
             }
         }
     }
+
+    private static double mib(long bytes) { return bytes / (1024.0 * 1024.0); }
 
     private static void dgemm(cublasHandle handle, Pointer alpha, Pointer dB, Pointer dA, Pointer beta, Pointer dC, int n) {
         JCublas2.cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, n, n, n, alpha, dB, n, dA, n, beta, dC, n);
@@ -221,6 +243,15 @@ public final class GemmBench {
 
     private static String format(double value) { return String.format(Locale.ROOT, "%.6e", value); }
 
+    private static void emitDeviceMemory(DeviceMemory memory) {
+        emit("cuda_device_index", String.valueOf(memory.device()));
+        emit("cuda_total_mib", format(memory.totalMiB()));
+        emit("cuda_free_mib_before_alloc", format(memory.freeMiBBefore()));
+        emit("cuda_free_mib_after_alloc", format(memory.freeMiBAfter()));
+        emit("cuda_alloc_delta_mib", format(memory.freeDecreaseMiB()));
+        emit("cuda_alloc_expected_mib", format(memory.expectedBytesMiB()));
+    }
+
     private static void emitSamples(String prefix, double[] samplesMs) {
         for (int i = 0; i < samplesMs.length; i++) emit(prefix + "_" + (i + 1) + "_ms", format(samplesMs[i]));
     }
@@ -246,7 +277,10 @@ public final class GemmBench {
 
     private record ProbeResult(String device, String result) {}
     private record TimingSamples(double[] samplesMs, double medianMs) {}
-    private record GpuResult(ErrorMetrics errors, double[] samplesMs, Object gpuMs, Object transferMs, Object speedupRatio, Object transferPct,
-                             String result, String verdict) {}
+    private record DeviceMemory(int device, double totalMiB, double freeMiBBefore, double freeMiBAfter, double expectedBytesMiB) {
+        double freeDecreaseMiB() { return freeMiBBefore - freeMiBAfter; }
+    }
+    private record GpuResult(ErrorMetrics errors, double[] samplesMs, DeviceMemory memory, Object gpuMs, Object transferMs,
+                             Object speedupRatio, Object transferPct, String result, String verdict) {}
     private record ErrorMetrics(double maxAbsErr, double maxRelErr, double mae, double frobRelErr) {}
 }
