@@ -3,14 +3,13 @@ gsd_state_version: 1.0
 milestone: v0.3.0
 milestone_name: milestone
 status: active
-last_updated: 2026-09-12T13:57:48.423Z
+last_updated: "2026-09-19T15:55:09.068Z"
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 20
   completed_plans: 20
-  percent: 71
-stopped_at: Phase 07 source delivery verified; future GPU runtime evidence pending
+  percent: 86
 ---
 
 # STATE: NumJa Performance & Scalability
