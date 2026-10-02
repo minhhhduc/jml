@@ -1,15 +1,18 @@
 ---
-gsd_state_version: 1.0
+gsd_state_version: "1.0"
 milestone: v0.3.0
-milestone_name: milestone
+current_phase: 08
+current_phase_name: performance-optimization
 status: active
-last_updated: "2026-09-19T15:55:09.068Z"
+stopped_at: Phase 8 context gathered
+last_updated: "2026-10-02T09:32:45.211Z"
+state_head: ebb4f55072dbce95a5bb1332d1209a667c79e77d
 progress:
-  total_phases: 7
-  completed_phases: 6
+  total_phases: 9
+  completed_phases: 7
   total_plans: 20
   completed_plans: 20
-  percent: 86
+milestone_name: milestone
 ---
 
 # STATE: NumJa Performance & Scalability
@@ -19,21 +22,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-25)
 
 **Core value:** Xử lý dữ liệu lớn nhanh hơn và chính xác hơn mà API không thay đổi
-**Current focus:** Phase 07 source delivery verified; future GPU runtime evidence pending
+**Current focus:** Phase 08 Performance Optimization — planning in progress (2026-10-02)
 
 ## Current Position
 
-Phase: 07 (gpu-fallback-poc-via-jcuda-cublas) — SOURCE DELIVERY VERIFIED
-Plan: 2 of 2 complete; future runtime evidence pending
+Phase: 08 (performance-optimization) — PLANNING
 
-- **Milestone:** v0.3.0 Performance & Scalability (first)
-- **Phase:** 07 of 7 (source delivery verified 2026-09-12; runtime GO/NO-GO pending)
-- **Phase 2:** **✅ CLOSED (verified GO 2026-08-27)** — plans 02-01..02-04 + code-review fixes (5 WRs in `28e7352..1d05d30`) + VERIFICATION.md + 02-BASELINE-AFTER.md. CPU-01 (add 10^7 = 2.43x, multiply 10^7 = 1.42x FLAGGED) + CPU-02 (sum 10^7 = 2.63x, mean 10^7 = 5.45x) PASS; GoldenReferenceTest sum/mean err ~2.6e-15. CPU-03 deferred.
-- **Phase 3:** **✅ CLOSED (verified GO 2026-08-28)** — plans 03-01..03-04 all executed (NumericStable + Kahan/log-sum-exp + AccuracyHardeningTest + BENCH-03 gate). Commits: `7e82b14`, `37975ac`, `ebd0a86`, `4144ee6`, `6ea1afe`, `065f219`, `3e209b3`, `ca0306a`, `2d026a7`, `0c97953`, `844d254`. All 4 requirements (ACC-01/02/03 + BENCH-03) verified. `mvn test` 55 tests green, 0 failures, 1 @Ignore. Public API frozen (61/34). 1 tolerance override: 15% → 50% in `03-baseline.json` (hybrid P/E noise floor exceeds original D-12 threshold; documented in `_meta.tolerance_rationale`). Regression gate `scripts/check_regression.ps1` self-consistent.
-- **Phase 4:** **✅ CLOSED (verified GO 2026-08-28)** — Adaptive Memory Model, all 4 plans executed. Wave 1: `ChunkedReadOptions` + `CsvChunkReader` (6+7 tests). Wave 2: `RunningGroupAggregator` (sum/mean/count/min/max/std, 8 tests) + `Pandas.read_csv_streaming` (sibling method, +1 to Pandas API; 5 tests). Wave 3: `GaussianNB.partial_fit` + `finalize_fit` (Chan's parallel M2, 5 tests) + `PandasPipeline` fluent builder (4 tests). Wave 4 commits: `f9d216a` (2 streaming JMH benchmarks), `3db7f36` (gate + 04-baseline.json), `cc9d5d2` (BASELINE-AFTER.md). `04-VERIFICATION.md` 22/22 must-haves PASS. All 5 requirements (MEM-01/02/03 + USE-02 + BENCH-03) verified. `mvn test` 90 tests, 0 failures, 1 pre-existing @Ignore. Public API: NumJa=61 frozen, ArrayOps=34 frozen, Pandas=+1 (read_csv_streaming), GaussianNB=+2 (partial_fit, finalize_fit). Stdlib-only; 0 new Maven deps. 1 tolerance override: 50% (Phase 3 carry-forward) in `04-baseline.json`. Regression gate self-consistent, idempotent.
-- **Phase 5:** Hardware Abstraction Layer & GPU POC — **READY TO EXECUTE**
-- **Phase 6:** Usability Polish & Release — planned (roadmap only, no plans yet)
-- **Phase 7 (added 2026-09-12):** GPU Fallback POC via JCuda/cuBLAS — conditional on Phase 5 TornadoVM NO-GO; isolated `bench/jcuda-poc`, same numerical (frob_rel_err ≤ 1e-9) + perf (speedup ≥ 2x, transfer < 50%) gates; production modules untouched unless both gates pass. Requirement GPU-04.
+- **Milestone:** v0.3.0 Performance & Scalability
+- **Phase:** Phases 1–7 all CLOSED. Phase 6 DROPPED 2026-10-02 per user instruction (skipped; requirements USE-01 + CPU-03 left unmapped). Phase 8 is the active phase.
+- **Phase 5:** **✅ CLOSED (2026-09-13, via Phase 7 evidence)** — HW-01/HW-02 complete (`ComputeBackend` + `CpuThreadBackend` + `BackendSelector`, 3/3 tests green). HW-03 closed via Phase 7's measured GO, NOT the original TornadoVM path: TornadoVM POC scaffolded in `bench/tornado-poc` but unrun on GPU (CUDA 13 driver breakage; issue #710 workaround documented); no `05-GPU-POC-RESULTS.md` exists — Phase 7 superseded evidence collection. GPU production integration deferred pending the GO caveats below.
+- **Phase 6:** **⏭️ DROPPED (2026-10-02, per user instruction)** — Usability Polish & Release skipped; USE-01 + CPU-03 unmapped. See ROADMAP.md.
+- **Phase 7:** **✅ DONE (2026-09-13, measured GO)** — JCuda 12.6 + cuBLAS Dgemm on Colab T4 at N=4096: `speedup_ratio=122.75`, `transfer_pct=17.33%`, `cpu_vs_gpu_frob_rel_err=9.85e-17`, `cuda_alloc_delta_mib=384.0` (in-process, = expected). GO scope caveats: 2-vCPU Colab CPU baseline, only N=4096 measured (dispatch threshold unmeasured), T4 not a deployment target. Production modules remain JCuda-free; no HAL integration yet.
 - **Branch:** `dev`
 
 ## Key Context for Future Sessions
@@ -59,3 +58,9 @@ See PROJECT.md ## Key Decisions.
 ## Blockers
 
 - None known.
+
+## Session
+
+**Last session:** 2026-10-02T09:32:43.697Z
+**Stopped at:** Phase 8 context gathered
+**Resume file:** .planning/phases/08-performance-optimization/08-CONTEXT.md
