@@ -1,5 +1,7 @@
 package sklearn.linear_model;
 
+import java.util.Arrays;
+
 import numja.core.NDArray;
 import numja.NumJa;
 import numja.NumericStable;
@@ -17,6 +19,9 @@ public class LogisticRegression {
     private int n_classes;
     private boolean fitted = false;
     private boolean verbose = false;
+    // Reused predict/fit scratch (allocated in fit; sequential use only).
+    private double[] scratchLogits;
+    private double[] scratchProbs;
 
     public LogisticRegression() {
         this(0.01, 1000, 1e-4);
@@ -64,25 +69,39 @@ public class LogisticRegression {
         weights = new double[n_classes][n_features];
         bias = new double[n_classes];
 
+        // Scratch buffers allocated once, reused across iters/samples instead of
+        // per-iter grad arrays + per-sample logits/probs/softmax temporaries.
+        // All loops below are sequential, so sharing is safe.
+        double[][] gradW = new double[n_classes][n_features];
+        double[] gradB = new double[n_classes];
+        double[] scratchLogits = new double[n_classes];
+        double[] scratchProbs = new double[n_classes];
+        this.scratchLogits = scratchLogits;
+        this.scratchProbs = scratchProbs;
+
         // Gradient descent
         double prev_loss = Double.MAX_VALUE;
 
         for (int iter = 0; iter < max_iter; iter++) {
             double loss = 0;
 
-            // Compute gradients over all samples
-            double[][] grad_w = new double[n_classes][n_features];
-            double[] grad_b = new double[n_classes];
+            // Zero grads in place (replaces per-iter new double[][]/new double[])
+            for (int c = 0; c < n_classes; c++) {
+                Arrays.fill(gradW[c], 0.0);
+                gradB[c] = 0.0;
+            }
 
+            // Compute gradients over all samples
             for (int i = 0; i < n_samples; i++) {
-                double[] probs = computeProbabilities(X_data[i]);
+                computeProbabilities(X_data[i], scratchLogits, scratchProbs);
+                double[] probs = scratchProbs;
 
                 for (int c = 0; c < n_classes; c++) {
                     double error = probs[c] - (y[i] == c ? 1.0 : 0.0);
                     for (int j = 0; j < n_features; j++) {
-                        grad_w[c][j] += error * X_data[i][j];
+                        gradW[c][j] += error * X_data[i][j];
                     }
-                    grad_b[c] += error;
+                    gradB[c] += error;
                 }
 
                 // Cross-entropy loss
@@ -92,9 +111,9 @@ public class LogisticRegression {
             // Update weights
             for (int c = 0; c < n_classes; c++) {
                 for (int j = 0; j < n_features; j++) {
-                    weights[c][j] -= learning_rate * grad_w[c][j] / n_samples;
+                    weights[c][j] -= learning_rate * gradW[c][j] / n_samples;
                 }
-                bias[c] -= learning_rate * grad_b[c] / n_samples;
+                bias[c] -= learning_rate * gradB[c] / n_samples;
             }
 
             loss /= n_samples;
@@ -120,8 +139,8 @@ public class LogisticRegression {
         int[] predictions = new int[X_data.length];
 
         for (int i = 0; i < X_data.length; i++) {
-            double[] probs = computeProbabilities(X_data[i]);
-            predictions[i] = argmax(probs);
+            computeProbabilities(X_data[i], scratchLogits, scratchProbs);
+            predictions[i] = argmax(scratchProbs);
         }
 
         return predictions;
@@ -166,6 +185,21 @@ public class LogisticRegression {
             }
         }
         return softmax(logits);
+    }
+
+    /**
+     * Buffer-reusing variant: logits into {@code logits}, probs into
+     * {@code probs} (single softmax pass, no temporaries). Sequential use only.
+     */
+    private void computeProbabilities(double[] x, double[] logits, double[] probs) {
+        for (int c = 0; c < n_classes; c++) {
+            double logit = bias[c];
+            for (int j = 0; j < x.length; j++) {
+                logit += weights[c][j] * x[j];
+            }
+            logits[c] = logit;
+        }
+        NumericStable.softmax(logits, probs);
     }
 
     private double[] softmax(double[] x) {

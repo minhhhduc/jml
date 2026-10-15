@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
+import numja.config.ThreadPoolConfig;
+
 /**
  * Parallel execution utilities for handling n_jobs.
  */
@@ -52,9 +54,14 @@ public class ParallelUtils {
             return results;
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+        // Shared pool: no per-call thread churn. The singleton ForkJoinPool is
+        // sized to 60% of cores (same default as getNumThreads); invokeAll
+        // preserves submission order so results stay aligned with tasks.
+        // Never shut down — the pool is process-wide (previous impl called
+        // shutdownNow() on a fresh pool per execute(), spiking latency).
+        ForkJoinPool pool = ThreadPoolConfig.getInstance().getForkJoinPool();
         try {
-            List<Future<T>> futures = executor.invokeAll(tasks);
+            List<Future<T>> futures = pool.invokeAll(tasks);
             List<T> results = new ArrayList<>(futures.size());
             for (Future<T> future : futures) {
                 results.add(future.get());
@@ -65,8 +72,6 @@ public class ParallelUtils {
             throw new RuntimeException("Parallel execution interrupted", e);
         } catch (ExecutionException e) {
             throw new RuntimeException("Task execution failed: " + e.getCause().getMessage(), e);
-        } finally {
-            executor.shutdownNow();
         }
     }
 }
