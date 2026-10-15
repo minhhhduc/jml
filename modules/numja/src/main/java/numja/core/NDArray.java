@@ -586,6 +586,27 @@ public class NDArray {
         throw new IllegalStateException("Cannot convert " + ndim + "D array to 2D double[][]");
     }
     
+    /**
+     * Bulk row-major copy into a caller-allocated {@code double[rows][cols]} buffer.
+     * Replaces per-element {@code get(i,j)} loops in hot extractors: one
+     * {@code System.arraycopy} per row straight from the row-major backing buffer.
+     * Caller allocates {@code out[rows][cols]}; 1D arrays are rejected (extractors are 2D-only).
+     */
+    public void copyTo2D(double[][] out) {
+        if (ndim != 2) {
+            throw new IllegalArgumentException("copyTo2D requires a 2D array, got " + ndim + "D");
+        }
+        int rows = shape[0];
+        int cols = shape[1];
+        if (out.length != rows || out[0].length != cols) {
+            throw new IllegalArgumentException("copyTo2D buffer shape mismatch: expected ["
+                + rows + "][" + cols + "], got [" + out.length + "][" + out[0].length + "]");
+        }
+        for (int i = 0; i < rows; i++) {
+            System.arraycopy(data.data, i * cols, out[i], 0, cols);
+        }
+    }
+    
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

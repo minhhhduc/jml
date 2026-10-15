@@ -138,11 +138,7 @@ public class StandardScaler {
         int rows = shape[0];
         int cols = shape[1];
         double[][] result = new double[rows][cols];
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                result[i][j] = arr.get(i, j);
-            }
-        }
+        arr.copyTo2D(result);
         return result;
     }
 }
