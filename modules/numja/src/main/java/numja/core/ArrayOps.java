@@ -239,27 +239,29 @@ public class ArrayOps {
     }
     
     /**
-     * Standard deviation
+     * Standard deviation (population, ddof=0). Single-pass Welford: mean and M2
+     * accumulate in one loop instead of mean() + second variance loop.
      */
     public static double std(NDArray a) {
-        double mean = a.mean();
-        double sumSquaredDiff = 0;
-        DMatrixRMaj data = a.getData();
-        
-        for (int i = 0; i < data.numRows * data.numCols; i++) {
-            double diff = data.data[i] - mean;
-            sumSquaredDiff += diff * diff;
-        }
-        
-        return Math.sqrt(sumSquaredDiff / a.getSize());
+        return Math.sqrt(var(a));
     }
-    
+
     /**
-     * Variance
+     * Variance (population, ddof=0). Single-pass Welford — one scan, no
+     * intermediate mean pass and no sqrt roundtrip (previous impl called
+     * std() then squared it: 2 extra passes + wasted sqrt).
      */
     public static double var(NDArray a) {
-        double std = std(a);
-        return std * std;
+        DMatrixRMaj data = a.getData();
+        int n = data.numRows * data.numCols;
+        double mean = 0.0;
+        double m2 = 0.0;
+        for (int i = 0; i < n; i++) {
+            double delta = data.data[i] - mean;
+            mean += delta / (i + 1);
+            m2 += delta * (data.data[i] - mean);
+        }
+        return m2 / a.getSize();
     }
     
     /**

@@ -190,24 +190,38 @@ Plans:
 
 Coverage: 16/17 requirements mapped ✓ (USE-01 unmapped after Phase 6 dropped)
 
-### Phase 8: Performance Optimization — ACTIVE (planning in progress 2026-10-02)
+### Phase 8: Clean Hot Paths (reduce intermediate steps) — ACTIVE (2026-10-15, re-scoped per user)
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Xóa các bước trung gian lãng phí trên hot paths đã đo: mỗi elementwise op cấp phát 1 mảng mới (chain k op = k temporaries), `std()` 2 passes + `var()` 3 passes (qua `sqrt` rồi bình phương lại), `ParallelUtils` dựng thread pool mới mỗi lần gọi, `extract2DArray` double-copy + `shape.clone()` mỗi lần gọi, softmax cấp phát mới mỗi sample mỗi iter.
 **Depends on:** Phase 7 (DONE, measured GO)
-**Plans:** 0 plans
+**Success Criteria:**
+
+1. `ArrayOps.std/var` single-pass (Welford mean+M2 chung 1 loop); `var` không đi qua `sqrt`
+2. `NDArray` có overloads `*InPlace/*Out` (additive, API cũ byte-identical) để chain ops tái dùng buffer
+3. `ParallelUtils` tái dùng shared pool (`ThreadPoolConfig.getForkJoinPool()`), không `newFixedThreadPool` mỗi call
+4. `NumericStable.softmax(x, out)` in-place variant; `LogisticRegression` tái dùng grad/logit buffers
+5. 90-test suite xanh + `scripts/check_regression.ps1` không regress (50% tolerance); API freeze giữ (NumJa 61 / ArrayOps 34 public statics, chỉ thêm overloads)
+
+Requirements: OPT-01, OPT-02
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 8 to break down)
+- [ ] 08-01-PLAN.md — numja core: single-pass std/var + InPlace/Out overloads + softmax out-variant
+- [ ] 08-02-PLAN.md — sklearn/pandas: shared pool + extract single-pass + KMeans/CSV intermediate reduction
 
-### Phase 9: Code Cleanup & Maintainability
+### Phase 9: Code Cleanup & Maintainability — PLANNED (re-scoped 2026-10-15)
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Dọn maintainability toàn repo sau Phase 8: xóa dead code, thống nhất patterns (threshold-gated dispatch, cross-path equivalence tests), sửa docs mâu thuẫn (CONCERNS.md §4), dọn binaries khỏi git (`libs/proguard-7.3.2`, `dist/*.jar`, `.gradle` cache gây PR 446 files).
 **Depends on:** Phase 8
-**Plans:** 0 plans
+**Success Criteria:**
+
+1. Không còn dead code/duplicated helpers đã gom (GoldenFixtures-style) — grep kiểm tra
+2. Docs mâu thuẫn đã sửa (BUILD_AND_SETUP.md Python leftover, Java compat claim, zero-dependency claim)
+3. `.gitignore` phủ binaries, PR gọn lại được
+4. Full suite xanh, API freeze giữ
+
+Requirements: MNT-01
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 9 to break down)
+- [ ] TBD (run /gsd-plan-phase 9 to break down after Phase 8)

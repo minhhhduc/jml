@@ -266,6 +266,84 @@ public class NDArray {
     public NDArray divide(double scalar) {
         return multiply(1.0 / scalar);
     }
+
+    /**
+     * In-place element-wise addition: {@code this += other}, no intermediate
+     * allocation. Shape-checked; returns {@code this} for chaining.
+     * Aliasing-safe: each index reads both inputs before writing.
+     */
+    public NDArray addInPlace(NDArray other) {
+        if (!Arrays.equals(shape, other.shape)) {
+            throw new IllegalArgumentException("Shape mismatch: " +
+                Arrays.toString(shape) + " vs " + Arrays.toString(other.shape));
+        }
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                data.data[i] += other.data.data[i];
+            }
+        } else {
+            ParallelOps.elementwiseBinary(data.data, other.data.data, data.data, Double::sum);
+        }
+        return this;
+    }
+
+    /**
+     * In-place element-wise subtraction: {@code this -= other}, no intermediate
+     * allocation. Shape-checked; returns {@code this} for chaining.
+     */
+    public NDArray subtractInPlace(NDArray other) {
+        if (!Arrays.equals(shape, other.shape)) {
+            throw new IllegalArgumentException("Shape mismatch");
+        }
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                data.data[i] -= other.data.data[i];
+            }
+        } else {
+            ParallelOps.elementwiseBinary(data.data, other.data.data, data.data, (x, y) -> x - y);
+        }
+        return this;
+    }
+
+    /**
+     * In-place element-wise multiplication: {@code this *= other}, no intermediate
+     * allocation. Shape-checked; returns {@code this} for chaining.
+     */
+    public NDArray multiplyInPlace(NDArray other) {
+        if (!Arrays.equals(shape, other.shape)) {
+            throw new IllegalArgumentException("Shape mismatch");
+        }
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                data.data[i] *= other.data.data[i];
+            }
+        } else {
+            ParallelOps.elementwiseBinary(data.data, other.data.data, data.data, (x, y) -> x * y);
+        }
+        return this;
+    }
+
+    /**
+     * In-place element-wise division: {@code this /= other}, no intermediate
+     * allocation. Shape-checked; returns {@code this} for chaining.
+     */
+    public NDArray divideInPlace(NDArray other) {
+        if (!Arrays.equals(shape, other.shape)) {
+            throw new IllegalArgumentException("Shape mismatch");
+        }
+        int n = data.numRows * data.numCols;
+        if (n < ParallelOps.THRESHOLD) {
+            for (int i = 0; i < n; i++) {
+                data.data[i] /= other.data.data[i];
+            }
+        } else {
+            ParallelOps.elementwiseBinary(data.data, other.data.data, data.data, (x, y) -> x / y);
+        }
+        return this;
+    }
     
     /**
      * Element-wise power

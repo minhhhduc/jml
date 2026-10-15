@@ -34,6 +34,13 @@
 - [ ] **USE-01**: Lỗi shape/dtype mismatch có message nêu rõ shape hai phía và op đang chạy
 - [ ] **USE-02**: Có helper factory/builder dựng pipeline dữ liệu lớn (load → chunk → transform → fit) dưới 10 dòng code
 
+### Intermediate Reduction (Phase 8 — added 2026-10-15 per user re-scope)
+- [ ] **OPT-01**: NumJa core không cấp phát thừa trên hot paths: elementwise chain tái dùng buffer (InPlace/Out overloads, additive), `std`/`var` single-pass (Welford, không `sqrt` roundtrip), softmax có `out` variant
+- [ ] **OPT-02**: Sklearn/pandas không copy trung gian thừa: `extract2DArray` single extract + raw view, `ParallelUtils` dùng shared pool, KMeans/CSV loop fusion (assign+inertia, columnar parse)
+
+### Maintainability (Phase 9 — added 2026-10-15 per user re-scope)
+- [ ] **MNT-01**: Xóa dead code/helpers trùng, sửa docs mâu thuẫn, `.gitignore` phủ binaries (`libs/proguard-7.3.2`, `dist/*.jar`, `.gradle`), full suite xanh + API freeze giữ
+
 ## v2 Requirements (deferred)
 
 - Distributed/cluster execution (Spark-like)
@@ -68,5 +75,8 @@
 | HW-02 | 5 | ✅ DONE |
 | HW-03 | 5 | ✅ DONE (closed via Phase 7 measured GO, not the TornadoVM path — see ROADMAP) |
 | GPU-04 | 7 | ✅ DONE (measured GO 2026-09-13, Colab T4) |
+| OPT-01 | 8 | 🔄 ACTIVE (hot-path intermediate reduction: single-pass stats, InPlace/Out overloads, shared pool, softmax reuse) |
+| OPT-02 | 8 | 🔄 ACTIVE (sklearn/pandas intermediate reduction: extract single-pass, KMeans/CSV fusion) |
+| MNT-01 | 9 | 📋 PLANNED (dead code, doc contradictions, binary .gitignore) |
 | USE-01 | 6 | ⏭️ DROPPED (Phase 6 dropped 2026-10-02; unmapped) |
 | USE-02 | 4 | ✅ DONE |

@@ -1,4 +1,8 @@
-# Phase 8: Performance Optimization - Context
+# Phase 8: Clean Hot Paths - Context
+
+> **RE-SCOPED 2026-10-15 per user:** GPU HAL integration (Track 2) deferred. This phase is now
+> clean code + cut intermediate steps on measured hot paths (OPT-01/OPT-02). The Both-CPU+GPU
+> scope below (D-01) is superseded; GPU items move to backlog. Phase 9 covers repo-wide cleanup (MNT-01).
 
 **Gathered:** 2026-10-02
 **Status:** Ready for planning

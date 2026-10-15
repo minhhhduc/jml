@@ -2,9 +2,9 @@
 gsd_state_version: "1.0"
 milestone: v0.3.0
 current_phase: 08
-current_phase_name: performance-optimization
+current_phase_name: clean-hot-paths
 status: active
-stopped_at: Phase 8 context gathered
+stopped_at: Phase 8 re-scoped to intermediate reduction 2026-10-15
 last_updated: "2026-10-02T09:32:45.211Z"
 state_head: ebb4f55072dbce95a5bb1332d1209a667c79e77d
 progress:
@@ -22,7 +22,7 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-08-25)
 
 **Core value:** Xử lý dữ liệu lớn nhanh hơn và chính xác hơn mà API không thay đổi
-**Current focus:** Phase 08 Performance Optimization — planning in progress (2026-10-02)
+**Current focus:** Phase 08 Clean Hot Paths — re-scoped 2026-10-15 per user (clean code + cut intermediate steps); GPU HAL integration deferred
 
 ## Current Position
 

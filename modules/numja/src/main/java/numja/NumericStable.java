@@ -15,23 +15,31 @@ public final class NumericStable {
      * Max-shift stable softmax: subtract max before exp so result is finite for any finite input.
      */
     public static double[] softmax(double[] x) {
+        double[] result = new double[x.length];
+        softmax(x, result);
+        return result;
+    }
+
+    /**
+     * Max-shift stable softmax writing into {@code out} (no intermediate arrays;
+     * single exp pass + in-place normalize). Caller guarantees
+     * {@code out.length == x.length}.
+     */
+    public static void softmax(double[] x, double[] out) {
         double max = Double.NEGATIVE_INFINITY;
         for (double val : x) {
             if (val > max) max = val;
         }
 
-        double[] exp = new double[x.length];
         double sum = 0;
         for (int i = 0; i < x.length; i++) {
-            exp[i] = Math.exp(x[i] - max);
-            sum += exp[i];
+            out[i] = Math.exp(x[i] - max);
+            sum += out[i];
         }
 
-        double[] result = new double[x.length];
         for (int i = 0; i < x.length; i++) {
-            result[i] = exp[i] / sum;
+            out[i] /= sum;
         }
-        return result;
     }
 
     /**
