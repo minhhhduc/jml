@@ -51,35 +51,47 @@ public class KMeans {
         // Extract 2D array from NDArray
         double[][] data = extract2DArray(X);
 
-        // Initialize centroids randomly
-        double[][] centroids_data = new double[n_clusters][n_features];
+        // Single centroid mirror for the whole fit (extracted once, updated in place)
+        double[][] centroidsData = new double[n_clusters][n_features];
         for (int k = 0; k < n_clusters; k++) {
             int idx = random.nextInt(n_samples);
-            centroids_data[k] = data[idx].clone();
+            centroidsData[k] = data[idx].clone();
         }
-        this.centroids = NumJa.array(centroids_data);
 
         // Iterate
         this.labels = new int[n_samples];
+        double[][] sums = new double[n_clusters][n_features];
+        int[] counts = new int[n_clusters];
         double prev_inertia = Double.MAX_VALUE;
 
         for (int iteration = 0; iteration < max_iter; iteration++) {
-            // Assign samples to nearest centroid
-            assignClusters(data);
+            // Single sample pass: assign labels, accumulate pre-update inertia,
+            // and per-cluster sums from the same distance computation.
+            double inertia = assignAndInertia(data, centroidsData, sums, counts);
 
-            // Compute new centroids
-            NDArray new_centroids = computeCentroids(data);
+            // Compute means in place (zero row preserved for empty clusters).
+            for (int k = 0; k < n_clusters; k++) {
+                if (counts[k] > 0) {
+                    for (int j = 0; j < n_features; j++) {
+                        sums[k][j] /= counts[k];
+                    }
+                }
+            }
 
-            // Check convergence
-            double inertia = computeInertia(data);
+            // Check convergence against pre-update inertia (bit-identical trajectory).
             if (Math.abs(prev_inertia - inertia) < tol) {
                 this.n_iter_ = iteration;
                 break;
             }
             prev_inertia = inertia;
-            this.centroids = new_centroids;
+            // Update mirror in place.
+            for (int k = 0; k < n_clusters; k++) {
+                System.arraycopy(sums[k], 0, centroidsData[k], 0, n_features);
+            }
             this.n_iter_ = iteration + 1;
         }
+
+        this.centroids = NumJa.array(centroidsData);
 
         return this;
     }
@@ -150,59 +162,32 @@ public class KMeans {
         return result;
     }
 
-    private void assignClusters(double[][] data) {
-        int n_samples = data.length;
-        double[][] centroids_data = extract2DArray(centroids);
+    private double assignAndInertia(double[][] data, double[][] centroidsData, double[][] sums, int[] counts) {
+        for (int k = 0; k < n_clusters; k++) {
+            counts[k] = 0;
+            for (int j = 0; j < sums[k].length; j++) {
+                sums[k][j] = 0.0;
+            }
+        }
 
-        for (int i = 0; i < n_samples; i++) {
+        double inertia = 0;
+        for (int i = 0; i < data.length; i++) {
             double min_dist = Double.MAX_VALUE;
             int closest = 0;
 
             for (int k = 0; k < n_clusters; k++) {
-                double dist = euclideanDistance(data[i], centroids_data[k]);
+                double dist = euclideanDistance(data[i], centroidsData[k]);
                 if (dist < min_dist) {
                     min_dist = dist;
                     closest = k;
                 }
             }
             labels[i] = closest;
-        }
-    }
-
-    private NDArray computeCentroids(double[][] data) {
-        int n_features = data[0].length;
-        double[][] new_centroids = new double[n_clusters][n_features];
-        int[] counts = new int[n_clusters];
-
-        // Sum points in each cluster
-        for (int i = 0; i < data.length; i++) {
-            int cluster = labels[i];
-            for (int j = 0; j < n_features; j++) {
-                new_centroids[cluster][j] += data[i][j];
+            inertia += min_dist * min_dist;
+            for (int j = 0; j < data[i].length; j++) {
+                sums[closest][j] += data[i][j];
             }
-            counts[cluster]++;
-        }
-
-        // Compute means
-        for (int k = 0; k < n_clusters; k++) {
-            if (counts[k] > 0) {
-                for (int j = 0; j < n_features; j++) {
-                    new_centroids[k][j] /= counts[k];
-                }
-            }
-        }
-
-        return NumJa.array(new_centroids);
-    }
-
-    private double computeInertia(double[][] data) {
-        double inertia = 0;
-        double[][] centroids_data = extract2DArray(centroids);
-
-        for (int i = 0; i < data.length; i++) {
-            int cluster = labels[i];
-            double dist = euclideanDistance(data[i], centroids_data[cluster]);
-            inertia += dist * dist;
+            counts[closest]++;
         }
 
         return inertia;
