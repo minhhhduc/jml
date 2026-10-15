@@ -50,8 +50,23 @@
 
 ## Traceability
 
-<!-- Roadmap fills this in: requirement → phase mapping -->
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (pending roadmap) | | |
+| BENCH-01 | 1 | ✅ DONE |
+| BENCH-02 | 1 | ✅ DONE |
+| BENCH-03 | 3 | ✅ DONE |
+| CPU-01 | 2 | ✅ DONE |
+| CPU-02 | 2 | ✅ DONE |
+| CPU-03 | 2 | ⏭️ DEFERRED (JDK 25 still preview; never re-assigned after Phase 6 dropped) |
+| ACC-01 | 3 | ✅ DONE |
+| ACC-02 | 3 | ✅ DONE |
+| ACC-03 | 3 | ✅ DONE |
+| MEM-01 | 4 | ✅ DONE |
+| MEM-02 | 4 | ✅ DONE |
+| MEM-03 | 4 | ✅ DONE |
+| HW-01 | 5 | ✅ DONE |
+| HW-02 | 5 | ✅ DONE |
+| HW-03 | 5 | ✅ DONE (closed via Phase 7 measured GO, not the TornadoVM path — see ROADMAP) |
+| GPU-04 | 7 | ✅ DONE (measured GO 2026-09-13, Colab T4) |
+| USE-01 | 6 | ⏭️ DROPPED (Phase 6 dropped 2026-10-02; unmapped) |
+| USE-02 | 4 | ✅ DONE |

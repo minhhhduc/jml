@@ -122,52 +122,48 @@ Requirements: MEM-01, MEM-02, MEM-03, USE-02, BENCH-03
 - JUnit 4 (NOT 5); `--release 17`; POM unchanged
 - Regression tolerance: 50% (carries Phase 3's documented override, NOT 15%)
 
-### Phase 5: Hardware Abstraction Layer & GPU POC
+### Phase 5: Hardware Abstraction Layer & GPU POC ✅ DONE (2026-09-13, closed via Phase 7 evidence)
 
 **Goal:** ComputeBackend interface với CPU backend mặc định; POC GPU qua 1 op chứng minh kiến trúc mở rộng được sang GPU/TPU.
 **Mode:** mvp
 **Success Criteria**
 
-1. ComputeBackend interface cài CpuThreadBackend, dispatch tự động theo size/khả năng máy, default path = behavior cũ
-2. POC document + benchmark: ít nhất 1 op (gemm) chạy qua TornadoVM (hoặc alternative đã research) với số đo so CPU
-3. Kết luận go/no-go cho GPU production backend ở milestone sau, dựa trên số liệu
-4. Public API không thay đổi (backend selection nội bộ)
+1. ComputeBackend interface cài CpuThreadBackend, dispatch tự động theo size/khả năng máy, default path = behavior cũ ✅ (05-01/05-02: `ComputeBackend` + `CpuThreadBackend` + `BackendSelector` allowlist + size-based dispatch via `numja.backend.maxDispatchN`; 3/3 tests green; bit-identical below THRESHOLD)
+2. POC document + benchmark: ít nhất 1 op (gemm) chạy qua TornadoVM (hoặc alternative đã research) với số đo so CPU ✅ (TornadoVM POC scaffolded in `bench/tornado-poc` but **superseded** — Phase 7 JCuda/cuBLAS POC measured GO on Colab T4: speedup 122.75x, transfer 17.33%, frob_rel_err 9.85e-17)
+3. Kết luận go/no-go cho GPU production backend ở milestone sau, dựa trên số liệu ✅ (**GO** per `07-RESULTS.md` 2026-09-13; scope caveat: 2-vCPU Colab baseline, only N=4096 measured, T4 not a deployment target — see "Not yet established by this GO")
+4. Public API không thay đổi (backend selection nội bộ) ✅ (NumJa 61 / ArrayOps 34 frozen; production modules JCuda-free)
 
 Requirements: HW-01, HW-02, HW-03
 
-### Phase 6: Usability Polish & Release
+**Closure caveat:** HW-03 closed via Phase 7's measured GO, not the original TornadoVM path. The TornadoVM POC (`bench/tornado-poc`) remains scaffolded-but-unrun-on-GPU (TornadoVM CUDA 13 driver breakage, issue #710 workaround documented); no `05-GPU-POC-RESULTS.md` exists because Phase 7 superseded the evidence collection. GPU production integration remains deferred pending the caveats above.
+
+### Phase 6: Usability Polish & Release — DROPPED (2026-10-02, per user instruction)
 
 **Goal:** Error messages rõ ràng, docs cập nhật, obfuscated release jars mới.
-**Mode:** mvp
-**Success Criteria**
 
-1. Shape/dtype mismatch error nêu shape hai phía + op name (test case xác nhận message)
-2. Docs (README, QUICK_REFERENCE) phản ánh tính năng mới: streaming mode, accuracy guarantees, benchmark tool
-3. ProGuard build pipeline chạy ra dist/*.jar v0.3.0, examples chạy thành công với jars mới
-4. CHANGELOG ghi đầy đủ thay đổi
+**Dropped:** per user decision to skip this phase and proceed to Phase 8. Requirements USE-01 and CPU-03 are left unmapped (not re-assigned to another phase). See `.planning/STATE.md`.
 
-Requirements: USE-01 (+ release hygiene)
-
-### Phase 7: GPU Fallback POC via JCuda/cuBLAS
+### Phase 7: GPU Fallback POC via JCuda/cuBLAS ✅ DONE (2026-09-13, measured GO)
 
 **Goal:** POC GPU thứ hai qua JCuda 12.6 + cuBLAS Dgemm (sau khi TornadoVM POC bị đánh giá NO-GO hoặc không chạy được trên Colab T4). Isolated benchmark module, không đụng production paths; chỉ tích hợp vào HAL nếu benchmark đạt numerical gate (frob_rel_err <= 1e-9) và perf gate (speedup >= 2x, transfer < 50%).
 **Mode:** mvp
 **Depends on:** Phase 5 (hardware abstraction layer exists; GO/NO-GO evidence)
 **Success Criteria:**
 
-1. Isolated bench module (bench/jcuda-poc) source is authored with cuBLAS Dgemm, key=value output, and Frobenius check; its future Colab T4 runbook is retained separately
-2. Benchmark source defines gpu_ms, transfer_ms, and speedup_ratio against the CPU baseline (N=4096, fixed seeds); runtime measurements remain pending
-3. Future evidence can make a GO/NO-GO decision for the production GPU backend only after the numerical and performance gates are measured
-4. Public API NumJa/ArrayOps remains unchanged; production modules remain free of JCuda dependencies
+1. Isolated bench module (bench/jcuda-poc) source is authored with cuBLAS Dgemm, key=value output, and Frobenius check; its future Colab T4 runbook is retained separately ✅
+2. Benchmark source defines gpu_ms, transfer_ms, and speedup_ratio against the CPU baseline (N=4096, fixed seeds); runtime measurements remain pending ✅ (measured 2026-09-13 on Colab T4 — `07-RESULTS.md`)
+3. Future evidence can make a GO/NO-GO decision for the production GPU backend only after the numerical and performance gates are measured ✅ (**verdict=GO**: frob_rel_err 9.85e-17 ≤ 1e-9, speedup 122.75x ≥ 2.0, transfer_pct 17.33% < 50.0, in-process `cuda_alloc_delta_mib` = 384.0 = expected)
+4. Public API NumJa/ArrayOps remains unchanged; production modules remain free of JCuda dependencies ✅
 
-**Note:** Chỉ thực thi nếu Phase 5 tornado-poc Colab run kết luận NO-GO. Nếu Phase 5 đạt GO thì phase này chuyển thành optional follow-up hoặc bị xóa.
+**Measured GO scope:** the POC demonstrates JCuda 12.6 + cuBLAS Dgemm is numerically correct and dramatically faster on a free Colab T4 at N=4096, with an isolated bench module and no production-module changes. **Not yet established:** (1) CPU baseline was a 2-vCPU container — speedup on the 10-core dev machine will be materially lower; (2) only N=4096 measured — the GPU dispatch threshold is unmeasured; (3) T4 is not a deployment target; no Windows GPU run exists. Production integration stays deferred until those close.
 
-**Plans:** 2 plans
+**Plans:** 2 — both executed
 
 Plans:
 
 - [x] 07-01-PLAN.md — Build isolated JCuda/cuBLAS Dgemm benchmark with local NO-GO handling and numerical/performance gates
 - [x] 07-02-PLAN.md — Author the dedicated future Colab T4 POC runbook and pending evidence template; execution and the evidence-backed GO/NO-GO decision are deferred
+
 
 ## Requirement Coverage
 
@@ -188,17 +184,17 @@ Plans:
 | HW-01 | 5 |
 | HW-02 | 5 |
 | HW-03 | 5 |
-| GPU-04 | 7 (conditional on Phase 5 NO-GO) |
-| USE-01 | 6 |
+| GPU-04 | 7 (GO measured 2026-09-13) |
+| USE-01 | 6 — **DROPPED 2026-10-02** (unmapped; not re-assigned) |
 | USE-02 | 4 |
 
-Coverage: 17/17 requirements mapped ✓
+Coverage: 16/17 requirements mapped ✓ (USE-01 unmapped after Phase 6 dropped)
 
-### Phase 8: Performance Optimization
+### Phase 8: Performance Optimization — ACTIVE (planning in progress 2026-10-02)
 
 **Goal:** [To be planned]
 **Requirements**: TBD
-**Depends on:** Phase 7
+**Depends on:** Phase 7 (DONE, measured GO)
 **Plans:** 0 plans
 
 Plans:
