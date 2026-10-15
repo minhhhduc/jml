@@ -206,8 +206,11 @@ Requirements: OPT-01, OPT-02
 
 Plans:
 
-- [ ] 08-01-PLAN.md — numja core: single-pass std/var + InPlace/Out overloads + softmax out-variant
-- [ ] 08-02-PLAN.md — sklearn/pandas: shared pool + extract single-pass + KMeans/CSV intermediate reduction
+- [x] 08-01 — numja core (executed 2026-10-15: single-pass std/var, softmax out-variant, NDArray InPlace ops; commits `e0461d0`)
+- [x] 08-02 — sklearn pool/buffers (executed 2026-10-15: shared FJP in ParallelUtils, LogisticRegression buffer reuse; commit `d3f6bc9`)
+- [x] 08-03 — pandas pass reduction (executed 2026-10-15: Series std via var, corr means precomputed; commit `987a936`)
+- [x] 08-04-PLAN.md — KMeans assign+inertia fusion, single centroid mirror (executed 2026-10-15; commit `cafe5be`)
+- [x] 08-05-PLAN.md — NDArray.copyTo2D bulk extract + migrate hot callers (executed 2026-10-15; commit `6016c6f`)
 
 ### Phase 9: Code Cleanup & Maintainability — PLANNED (re-scoped 2026-10-15)
 
@@ -224,4 +227,5 @@ Requirements: MNT-01
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 9 to break down after Phase 8)
+- [x] 09-01-PLAN.md — stale docs fix + untrack binaries/caches (executed 2026-10-15; commit `57455b5`)
+- [ ] TBD follow-ups (only if 09-01 SUMMARY defers items)
