@@ -74,9 +74,10 @@ public class Series {
         return c > 0 ? s / c : Double.NaN;
     }
     public double std() {
-        double m = mean(); int c = 0; double ss = 0;
-        for (double v : data) if (!Double.isNaN(v)) { ss += (v - m) * (v - m); c++; }
-        return c > 1 ? Math.sqrt(ss / (c - 1)) : 0;
+        // Single definition: var() already does the one mean pass + one ss pass;
+        // previous impl duplicated both passes here (mean() + full loop).
+        // Bit-identical: sqrt(ss/(c-1)) either way; var() >= 0 so sqrt(0) = 0 matches.
+        return Math.sqrt(var());
     }
     public double min() {
         double m = Double.MAX_VALUE;

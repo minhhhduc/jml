@@ -261,19 +261,24 @@ public class DataFrame {
     // ===== CORRELATION =====
     public DataFrame corr() {
         double[][] cMatrix = new double[columns.length][columns.length];
+        // Column means computed once: previous impl recomputed s.mean() inside
+        // every pearsonCorr call, so column i's mean was rescanned p times.
+        double[] means = new double[columns.length];
+        for (int i = 0; i < columns.length; i++) {
+            means[i] = columnsData.get(columns[i]).mean();
+        }
         for (int i = 0; i < columns.length; i++) {
             Series s1 = columnsData.get(columns[i]);
             for (int j = 0; j < columns.length; j++) {
                 if (i == j) { cMatrix[i][j] = 1.0; continue; }
                 Series s2 = columnsData.get(columns[j]);
-                cMatrix[i][j] = pearsonCorr(s1, s2);
+                cMatrix[i][j] = pearsonCorr(s1, s2, means[i], means[j]);
             }
         }
         return new DataFrame(cMatrix, columns, columns);
     }
 
-    private double pearsonCorr(Series s1, Series s2) {
-        double m1 = s1.mean(), m2 = s2.mean();
+    private double pearsonCorr(Series s1, Series s2, double m1, double m2) {
         if (Double.isNaN(m1) || Double.isNaN(m2)) return Double.NaN;
         double sumSq1 = 0, sumSq2 = 0, sumCop = 0;
         for (int i = 0; i < s1.size(); i++) {
