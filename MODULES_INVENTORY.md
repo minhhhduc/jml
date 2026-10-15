@@ -11,6 +11,11 @@ Every single planned machine learning model, statistical scaler, visualizer, dat
 * 🌟 **`seaborn.jar`**: Premium statistical data visualizers & Seaborn Heatmap.
 * 🌟 **`sklearn.jar`**: Full-featured Machine Learning engine (equivalent to Python's Scikit-Learn).
 
+### Dependency posture
+* Production core is stdlib-only; math/plot support comes from vendored
+  dependencies shipped in `dist/libs/`: `ejml-core` + `ejml-ddense`
+  (0.43.1), `commons-math3` (3.6.1), `jfreechart` (1.5.3).
+
 ---
 
 ## 📦 COMPLETE INVENTORY - Production Abstractions

@@ -107,3 +107,15 @@ _temp_*.png
 _test_out.csv
 sample_advanced.csv
 .claude
+
+## 09-01: untracked binaries/caches (files stay on disk, clones restore via build)
+# Vendored ProGuard distribution (221 files incl. .gradle caches in examples/)
+libs/proguard-7.3.2/
+# Built / obfuscated jars — keep dist/ dir + datasets + non-jar files tracked
+dist/*.jar
+dist/**/*.jar
+# Gradle caches anywhere (currently only inside libs/proguard-7.3.2/examples/)
+.gradle/
+**/.gradle/
+# Generated sample output at repo root (no doc references it; regenerable)
+confusion_matrix.png
