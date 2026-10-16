@@ -1,0 +1,1 @@
+{"op":"logsumexp_simple","seed":47,"input_gen":"double[500]: java.util.Random.nextDouble()*100.0-50.0 per element","tolerance_rel":1e-14,"theoretical_upper_bound":56.7}

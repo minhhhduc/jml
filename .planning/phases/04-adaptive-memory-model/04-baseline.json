@@ -1,0 +1,31 @@
+{
+  "_meta": {
+    "phase": "04-adaptive-memory-model",
+    "created": "2026-08-28",
+    "machine": "Intel Core i7-1255U, 15.7GB RAM, Windows 11, JDK 25.0.3+9, Maven 3.9.15",
+    "perf_tolerance_pct": 50.0,
+    "carries_from": "03-baseline.json (same perf_benchmarks SCHEMA + same accuracy_checks VERBATIM). Perf score_ms values RE-MEASURED in Phase 4 sweep — same machine, same JMH config, fresh JVM. Phase 3 numbers preserved in 03-baseline.json as historical record; Phase 4 numbers represent current machine state used by the gate.",
+    "measurement_runs": 3,
+    "aggregation": "median of 3 single-fork JMH runs (-f 1 -wi 3 -i 3 -w 1s -r 1s) — same Phase 3 methodology",
+    "tolerance_rationale": "Phase 3 raised default from 15% to 50% due to hybrid P/E noise floor on i7-1255U; Phase 4 inherits the 50% standard. New streaming benchmarks also use 50% tolerance — they exercise chunked CSV reader + per-chunk aggregator merge, both with chunk-allocation overhead and iterator traversal costs within the same hybrid P/E envelope.",
+    "future_work": "Phase 5 may pin to P-cores via /affinity or set up isolated benchmark profile. Until then, treat ±50% as the noise floor on this hardware.",
+    "phase4_re_measurement_note": "Phase 4 re-measured all 10 perf benchmarks on the same machine using identical JMH config. Median numbers reflect current JVM state; Phase 3 numbers (in 03-baseline.json) showed the machine was running ~50% slower overall — likely thermal throttling / P-core scheduling differences across sessions. Both baseline files are valid; 04-baseline.json supersedes 03-baseline.json for the gate."
+  },
+  "perf_benchmarks": [
+    {"benchmark": "add_elementwise", "params": {"n": 1000000}, "score_ms": 2.885, "tolerance_pct": 50.0, "phase4_change": "Re-measured: 2.885ms median vs Phase 3 5.901ms — within hybrid P/E noise envelope; same EJML SIMD path."},
+    {"benchmark": "add_elementwise", "params": {"n": 10000000}, "score_ms": 29.926, "tolerance_pct": 50.0, "phase4_change": "Re-measured: 29.926ms median vs Phase 3 56.196ms — same EJML SIMD path; faster sweep this session."},
+    {"benchmark": "multiply_elementwise", "params": {"n": 1000000}, "score_ms": 3.196, "tolerance_pct": 50.0, "phase4_change": "Re-measured: 3.196ms median vs Phase 3 3.855ms — within noise."},
+    {"benchmark": "multiply_elementwise", "params": {"n": 10000000}, "score_ms": 30.108, "tolerance_pct": 50.0, "flag": "EJML SIMD ceiling on i7-1255U — Phase 5 follow-up", "phase4_change": "Re-measured: 30.108ms median vs Phase 3 35.558ms — within noise."},
+    {"benchmark": "sum_reduce", "params": {"n": 10000000}, "score_ms": 8.812, "tolerance_pct": 50.0, "phase3_change": "per-leaf Kahan compensation — within Phase 2 noise floor (Phase 2 CI was ±93%; overhead not measurable above noise)", "phase4_change": "Re-measured: 8.812ms median vs Phase 3 13.212ms — same Kahan path."},
+    {"benchmark": "mean_reduce", "params": {"n": 10000000}, "score_ms": 9.645, "tolerance_pct": 50.0, "phase3_change": "delegates to sum() — inherits Kahan leaf via sum path", "phase4_change": "Re-measured: 9.645ms median vs Phase 3 11.389ms — within noise."},
+    {"benchmark": "add_elementwise_small", "params": {"n": 10000}, "score_ms": 0.019, "tolerance_pct": 50.0, "phase4_change": "Re-measured: 0.019ms median vs Phase 3 0.036ms — sub-threshold sequential EJML path; within noise."},
+    {"benchmark": "add_elementwise_small", "params": {"n": 100000}, "score_ms": 0.271, "tolerance_pct": 50.0, "phase4_change": "Re-measured: 0.271ms median vs Phase 3 0.471ms — at THRESHOLD boundary; gate honoured."},
+    {"benchmark": "read_csv_streaming_california", "params": {"chunkRows": 10000}, "score_ms": 61.291, "tolerance_pct": 50.0, "phase4_change": "NEW — chunked read_csv over california_housing.csv (~20k rows, 2-3 chunks at 10k rows). Comparable to in-memory read_csv_california (58.064ms in same sweep): the BufferedReader per-chunk allocation + Series construction overhead is roughly equal to the in-memory single-shot parse cost at this dataset size. Expected to scale advantage only appears on larger files (>100k rows) where in-memory blows up but streaming stays constant memory."},
+    {"benchmark": "streaming_groupby_sum_titanic", "params": {"chunkRows": 10000}, "score_ms": 26.300, "tolerance_pct": 50.0, "phase4_change": "NEW — streaming groupby via RunningGroupAggregator.sum over titanic.csv (~891 rows, single chunk). The 26ms cost is dominated by CsvChunkReader per-chunk parser overhead + Series materialization in the single-chunk case (the aggregator loop itself is O(n) and negligible). For multi-chunk merges the cost grows linearly with chunk count; for single-chunk the constant is high but not pathological."}
+  ],
+  "accuracy_checks": [
+    {"op": "softmax_extreme_logits", "max_rel_err": 1.0e-13, "fixture": "softmax_extreme_logits.json", "enforced_by": "mvn test -Dtest=AccuracyHardeningTest"},
+    {"op": "logsumexp_simple", "max_rel_err": 1.0e-14, "fixture": "logsumexp_simple.json", "enforced_by": "mvn test -Dtest=AccuracyHardeningTest"},
+    {"op": "sum_pathological_cancellation", "max_rel_err": 1.0e-13, "fixture": "sum_mean_pathological.json", "enforced_by": "mvn test -Dtest=AccuracyHardeningTest"}
+  ]
+}

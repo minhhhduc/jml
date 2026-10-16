@@ -1,6 +1,6 @@
 # NumJa: High-Performance Matrix Algebra & Statistical Learning Framework for Java
 > **Release Version 0.2.0 - Closed-Source Modular Release**
-> NumJa is a high-performance, zero-dependency, and mathematically rigorous matrix algebra and statistical learning library developed natively for the Java Virtual Machine (JVM). It offers an intuitive, Python-equivalent syntax simulating NumPy, Pandas, Matplotlib, Seaborn, and Scikit-Learn, optimized for low-latency offline executions.
+> NumJa is a high-performance, stdlib-only-cored, and mathematically rigorous matrix algebra and statistical learning library developed natively for the Java Virtual Machine (JVM). The production core uses only the Java standard library plus the vendored math/plot dependencies shipped in `dist/libs/` (EJML, commons-math3, jfreechart). It offers an intuitive, Python-equivalent syntax simulating NumPy, Pandas, Matplotlib, Seaborn, and Scikit-Learn, optimized for low-latency offline executions.
 
 ---
 
@@ -13,7 +13,7 @@ In scientific computing and data science, the Python ecosystem (NumPy, SciPy, Sc
 
 ## Architectural Specifications & Decoupling
 
-NumJa is distributed as a suite of five decoupled, highly interoperable JAR modules targeting Java 11 through Java 25+:
+NumJa is distributed as a suite of five decoupled, highly interoperable JAR modules. Release jars are compiled with `--release 11` (`scripts/build_core.ps1`) and the Maven modules build at source/target 17; the build runs on JDK 17 and JDK 25 runtimes. Compatibility with Java versions above the build JDKs is unverified — the upper bound is unknown, so "Java 11 through Java 25+" should be treated as an aspiration, not a tested claim:
 
 ```text
 dist/

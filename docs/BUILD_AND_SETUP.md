@@ -1,81 +1,74 @@
 # Build and Setup Instructions
 
-## Python Setup
+> NOTE: This repo is Java-only. There is no Python package — the earlier
+> installer/test-runner instructions for a `src/numja` Python tree were
+> a leftover from a previous iteration and have been removed.
+> Build and test with Maven on Windows PowerShell.
+
+## Windows Setup (PowerShell + Maven)
+
+### Prerequisites
+- Java 17+ JDK (release jars compile with `--release 11`; Maven modules
+  use source/target 17; running on newer JDKs works but the upper bound
+  is unverified — see README)
+- Maven 3.9.15 at `C:\Users\Admin\.maven\maven-3.9.15\bin`
+  (not on default PATH — prefix it in every new shell)
 
 ### Installation
-```bash
+```powershell
 # Navigate to project
-cd java_ml
+cd D:\unknown\projects\java_ml
 
-# Install dependencies
-pip install numpy scipy
+# Put Maven on PATH for this shell (required every new shell)
+$env:Path = "C:\Users\Admin\.maven\maven-3.9.15\bin;" + $env:Path
 
-# Install package (optional)
-pip install -e .
+# Verify
+mvn -version
+java -version
 ```
 
-### Running Python Tests
-```bash
-# Direct execution
-python src/numja/tests.py
+### Running Tests
+```powershell
+# Fast smoke: core modules only
+mvn -pl modules/numja,modules/pandas,modules/sklearn test
 
-# Or with imports
-cd src/numja
-python tests.py
+# Include upstream deps explicitly
+mvn -pl modules/sklearn -am test
+
+# Single test class (PowerShell quoting)
+mvn -pl modules/numja -am test "-Dtest=CpuThreadBackendGoldenTest"
 ```
 
-### Using Python NumJa
-```python
-import sys
-sys.path.insert(0, 'src')
-
-import numja as nj
-from numja import ThreadPoolConfig, set_num_threads
-
-# Create arrays
-a = nj.array([1, 2, 3, 4, 5])
-b = nj.zeros((3, 4))
-
-# Operations
-c = a + 10
-result = nj.matmul(a, b.T)
-
-# Thread management
-set_num_threads(4)
-print(nj.get_num_threads())
+### Building Jars
+```powershell
+mvn -pl modules/numja,modules/pandas,modules/sklearn -am package -DskipTests
 ```
 
 ## Java Setup
 
 ### Prerequisites
-- Java 11 or higher
-- Maven 3.6+ or use the bundled wrapper
+- Java 17+ JDK
+- Maven 3.9.15 (`C:\Users\Admin\.maven\maven-3.9.15\bin`, prefixed to PATH)
 
-### Build with Maven
+### Build with Maven (PowerShell)
 
-```bash
-# Navigate to Java project
-cd java_ml
+```powershell
+# Navigate to project
+cd D:\unknown\projects\java_ml
+$env:Path = "C:\Users\Admin\.maven\maven-3.9.15\bin;" + $env:Path
 
 # Clean and compile
 mvn clean compile
 
-# Run tests
-mvn test
+# Run tests (module-scoped is faster)
+mvn -pl modules/numja,modules/pandas,modules/sklearn test
 
-# Create JAR
+# Create JARs
 mvn package
-
-# Run JAR
-java -jar target/numja-0.1.0.jar
 ```
 
-### Using Maven Wrapper (if available)
-```bash
-./mvnw clean compile
-./mvnw test
-./mvnw package
-```
+> There is no Maven wrapper (`mvnw`) in this repo; always use the
+> Maven 3.9.15 install above.
 
 ### Using in Java Project
 
@@ -122,21 +115,6 @@ public class Example {
 
 ## Development Setup
 
-### Python Development
-```bash
-# Install development dependencies
-pip install pytest pytest-cov black flake8
-
-# Format code
-black src/numja/
-
-# Lint code
-flake8 src/numja/
-
-# Run tests with coverage
-pytest src/numja/tests.py --cov=src/numja
-```
-
 ### Java Development
 ```bash
 # Install IDE plugins
@@ -153,31 +131,13 @@ mvn eclipse:eclipse
 
 ## Troubleshooting
 
-### Python Issues
-
-**ImportError: No module named 'numpy'**
-```bash
-pip install numpy scipy
-```
-
-**Module not found when importing numja**
-```python
-import sys
-sys.path.insert(0, '/path/to/java_ml/src')
-import numja
-```
-
-**Thread configuration not working**
-- Restart Python interpreter after changing settings
-- Check with `from numja import get_num_threads; print(get_num_threads())`
-
 ### Java Issues
 
-**Maven not found**
-```bash
-# Install Maven or download from https://maven.apache.org
-# Add to PATH, or use wrapper
-./mvnw --version
+**Maven not found (`mvn` is not recognized)**
+```powershell
+# Maven is NOT on default PATH on this machine; prefix it first:
+$env:Path = "C:\Users\Admin\.maven\maven-3.9.15\bin;" + $env:Path
+mvn -version
 ```
 
 **Compilation error: Java version incompatibility**
@@ -202,20 +162,6 @@ mvn -DargLine="-Xmx2g" test
 
 ## Performance Tuning
 
-### Python
-```python
-from numja import ThreadPoolConfig, set_num_threads
-
-# View current setup
-config = ThreadPoolConfig()
-print(config.get_config_dict())
-
-# Experiment with thread counts
-for threads in [1, 2, 4, 8]:
-    set_num_threads(threads)
-    # Run your code and measure performance
-```
-
 ### Java
 ```java
 import com.numja.NumJa;
@@ -232,15 +178,6 @@ for (int threads : new int[]{1, 2, 4, 8}) {
 ```
 
 ## Deployment
-
-### Python Package
-```bash
-# Create distribution
-python setup.py sdist bdist_wheel
-
-# Upload to PyPI (if configured)
-twine upload dist/*
-```
 
 ### Java Library
 ```bash
@@ -267,29 +204,16 @@ on: [push, pull_request]
 
 jobs:
   java:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       matrix:
-        java-version: [11, 15, 17]
+        java-version: [17, 25]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v2
         with:
           java-version: ${{ matrix.java-version }}
-      - run: mvn clean test
-  
-  python:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9, "3.10"]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - run: pip install -r requirements.txt
-      - run: python -m pytest src/numja/tests.py
+      - run: mvn -pl modules/numja,modules/pandas,modules/sklearn test
 ```
 
 ## Documentation
@@ -302,17 +226,7 @@ mvn javadoc:javadoc
 # Output: target/site/apidocs/
 ```
 
-**Python**
-```bash
-pip install sphinx
-sphinx-build -b html docs/ docs/_build/
-```
-
 ## Version Management
-
-### Python
-- Edit version in `setup.py`
-- Tag release: `git tag v0.1.0`
 
 ### Java
 - Edit version in `pom.xml` (`<version>` tag)
@@ -321,23 +235,6 @@ sphinx-build -b html docs/ docs/_build/
 ## Performance Benchmarks
 
 ### Running Benchmarks
-
-**Python**
-```python
-import time
-import numja as nj
-
-# Benchmark matrix multiplication
-A = nj.arange(0, 10000).reshape(100, 100)
-B = nj.arange(0, 10000).reshape(100, 100)
-
-start = time.time()
-for _ in range(100):
-    C = nj.matmul(A, B)
-end = time.time()
-
-print(f"Time: {(end - start) / 100:.4f}s per operation")
-```
 
 **Java**
 ```java

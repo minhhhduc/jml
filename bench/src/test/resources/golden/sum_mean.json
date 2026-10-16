@@ -1,0 +1,1 @@
+{"op":"sum_mean","seed":43,"input_gen":"double[1000000]: java.util.Random.nextDouble()*2-1 per element","expected":{"sum":-492.7027083910544,"mean":-0.0004927027083910544},"tolerance_rel":1e-13}
